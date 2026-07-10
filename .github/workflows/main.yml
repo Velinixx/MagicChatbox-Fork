@@ -89,40 +89,7 @@ jobs:
       run: |
         Compress-Archive -Path vrcosc-magicchatbox/bin/Release/net9.0-windows10.0.26100.0/* -DestinationPath "MagicChatbox-${{ env.VERSION }}.zip"
 
-    # Step 7: [Optional] Upload & Scan with VirusTotal
-    - name: Upload and Scan with VirusTotal
-      if: steps.check_release.outputs.release_exists == 'false'
-      id: virustotal_scan
-      shell: pwsh
-      run: |
-        $file_path = "./MagicChatbox-${{ env.VERSION }}.zip"
-        $api_key = "${{ secrets.VIRUSTOTAL_API_KEY }}"
-
-        $response = Invoke-RestMethod -Uri "https://www.virustotal.com/api/v3/files" -Method Post -Headers @{
-          "x-apikey" = $api_key
-        } -Form @{
-          "file" = Get-Item $file_path
-        }
-
-        $scan_id = $response.data.id
-        echo "::set-output name=SCAN_ID::$scan_id"
-
-    - name: Get VirusTotal Scan Report
-      if: steps.check_release.outputs.release_exists == 'false'
-      id: virustotal_report
-      shell: pwsh
-      run: |
-        $api_key = "${{ secrets.VIRUSTOTAL_API_KEY }}"
-        $scan_id = "${{ steps.virustotal_scan.outputs.SCAN_ID }}"
-
-        $response = Invoke-RestMethod -Uri "https://www.virustotal.com/api/v3/analyses/$scan_id" -Headers @{
-          "x-apikey" = $api_key
-        }
-
-        $report_url = "https://www.virustotal.com/gui/file/$($response.meta.file_info.sha256)/detection"
-        echo "::set-output name=REPORT_URL::$report_url"
-
-    # Step 8: Determine if this is a pre-release or final release
+    # Step 7: Determine if this is a pre-release or final release
     - name: Determine Release Type
       if: steps.check_release.outputs.release_exists == 'false'
       id: determine_release_type
@@ -142,7 +109,7 @@ jobs:
       id: create_release
       uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.MY_PAT }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: v${{ env.VERSION }}
         release_name: ${{ env.RELEASE_NAME }}
@@ -160,11 +127,8 @@ jobs:
 
           <div align="center">
             <p>
-              <a href="https://github.com/BoiHanny/vrcosc-magicchatbox/releases/download/v${{ env.VERSION }}/MagicChatbox-${{ env.VERSION }}.zip">
+              <a href="https://github.com/Velinixx/MagicChatbox-Fork/releases/download/v${{ env.VERSION }}/MagicChatbox-${{ env.VERSION }}.zip">
                 <img src="https://custom-icon-badges.herokuapp.com/badge/-Download-%23512BD4?style=for-the-badge&logo=download&logoColor=white" alt="Download">
-              </a>
-              <a href="${{ steps.virustotal_report.outputs.REPORT_URL }}">
-                <img src="https://custom-icon-badges.herokuapp.com/badge/-Virus%20Scan%20Result-blue?style=for-the-badge&logo=virustotal&logoColor=white" alt="VirusTotal">
               </a>
             </p>
           </div>
@@ -217,7 +181,7 @@ jobs:
       if: steps.check_release.outputs.release_exists == 'false'
       uses: actions/upload-release-asset@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.MY_PAT }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./MagicChatbox-${{ env.VERSION }}.zip
