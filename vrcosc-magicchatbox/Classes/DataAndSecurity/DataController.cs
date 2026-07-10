@@ -555,7 +555,10 @@ public static class DataController
     { "Settings_TTS", (typeof(bool), "OptionsTabState") },
     { "Settings_MediaLink", (typeof(bool), "OptionsTabState") },
     { "Settings_AppOptions", (typeof(bool), "OptionsTabState") },
-    { "Settings_WindowActivity", (typeof(bool), "OptionsTabState") }
+    { "Settings_WindowActivity", (typeof(bool), "OptionsTabState") },
+
+    { "SelectedTheme", (typeof(int), "Appearance") },
+    { "GradientConfigJson", (typeof(string), "Appearance") }
 
 };
     }

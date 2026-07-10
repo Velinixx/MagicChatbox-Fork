@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -134,7 +135,7 @@ namespace vrcosc_magicchatbox
             ViewModel.Instance.AfkModule = new AfkModule();
             ViewModel.Instance.AfkModule.AfkDetected += AfkModule_AfkDetected;
 
-
+            Loaded += (s, e) => SyncThemeUI();
         }
 
         private void WhisperModule_SentChat()
@@ -1820,6 +1821,54 @@ namespace vrcosc_magicchatbox
         private void TextBlock_GiveFeedback(object sender, GiveFeedbackEventArgs e)
         {
 
+        }
+
+        private void ThemeRadio_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is RadioButton rb && rb.Tag is string tagStr && int.TryParse(tagStr, out int theme))
+            {
+                ViewModel.Instance.SelectedTheme = theme;
+                CustomThemePanel.Visibility = theme == 4 ? Visibility.Visible : Visibility.Collapsed;
+                UpdateActiveGradientSwatch();
+            }
+        }
+
+        private void OpenGradientEditorBtn_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new GradientEditorDialog();
+            dialog.Owner = this;
+            dialog.ShowDialog();
+            UpdateActiveGradientSwatch();
+        }
+
+        private void UpdateActiveGradientSwatch()
+        {
+            try
+            {
+                if (ViewModel.Instance.SelectedTheme == 4)
+                {
+                    string json = ViewModel.Instance.GradientConfigJson;
+                    if (!string.IsNullOrEmpty(json))
+                    {
+                        var grad = JsonConvert.DeserializeObject<ViewModels.Models.GradientConfig>(json);
+                        if (grad != null)
+                            ActiveGradientSwatch.Background = UI.Dialogs.GradientEditorDialog.BuildGradientBrush(grad);
+                        else
+                            ActiveGradientSwatch.Background = new SolidColorBrush(Colors.Gray);
+                    }
+                }
+            }
+            catch { }
+        }
+
+        public void SyncThemeUI()
+        {
+            int theme = ViewModel.Instance.SelectedTheme;
+            var radios = new[] { DarkRadio, LightRadio, MidnightRadio, OriginalRadio, CustomThemeRadio };
+            if (theme >= 0 && theme < radios.Length)
+                radios[theme].IsChecked = true;
+            CustomThemePanel.Visibility = theme == 4 ? Visibility.Visible : Visibility.Collapsed;
+            UpdateActiveGradientSwatch();
         }
     }
 

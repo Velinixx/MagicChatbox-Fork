@@ -4506,6 +4506,91 @@ namespace vrcosc_magicchatbox.ViewModels
 
         #endregion
 
+        #region Theme
+
+        private int _selectedTheme = 0;
+        public int SelectedTheme
+        {
+            get => _selectedTheme;
+            set
+            {
+                _selectedTheme = value;
+                NotifyPropertyChanged(nameof(SelectedTheme));
+                RefreshWindowBackground();
+            }
+        }
+
+        private string _gradientConfigJson = "{\"type\":\"linear\",\"angle\":0,\"stops\":[{\"color\":\"#3B3054\",\"position\":0},{\"color\":\"#240E55\",\"position\":100}]}";
+        public string GradientConfigJson
+        {
+            get => _gradientConfigJson;
+            set
+            {
+                _gradientConfigJson = value;
+                NotifyPropertyChanged(nameof(GradientConfigJson));
+            }
+        }
+
+        public void RefreshWindowBackground()
+        {
+            NotifyPropertyChanged(nameof(WindowBackgroundBrush));
+            NotifyPropertyChanged(nameof(WindowGridBackgroundBrush));
+        }
+
+        public System.Windows.Media.Brush WindowBackgroundBrush
+        {
+            get
+            {
+                switch (_selectedTheme)
+                {
+                    case 1:
+                        return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE8, 0xE0, 0xF0));
+                    case 2:
+                        return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x00, 0x00, 0x00));
+                    case 3:
+                        return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x24, 0x0E, 0x55));
+                    case 4:
+                        return BuildGradientBrush();
+                    default:
+                        return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1E, 0x1E, 0x1E));
+                }
+            }
+        }
+
+        public System.Windows.Media.Brush WindowGridBackgroundBrush
+        {
+            get
+            {
+                switch (_selectedTheme)
+                {
+                    case 1:
+                        return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF5, 0xF0, 0xFA));
+                    case 2:
+                        return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x00, 0x00, 0x00));
+                    case 3:
+                        return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x3B, 0x30, 0x54));
+                    case 4:
+                        return BuildGradientBrush();
+                    default:
+                        return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2A, 0x2A, 0x2A));
+                }
+            }
+        }
+
+        private System.Windows.Media.Brush BuildGradientBrush()
+        {
+            try
+            {
+                var grad = Newtonsoft.Json.JsonConvert.DeserializeObject<ViewModels.Models.GradientConfig>(_gradientConfigJson);
+                if (grad != null)
+                    return UI.Dialogs.GradientEditorDialog.BuildGradientBrush(grad);
+            }
+            catch { }
+            return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x3B, 0x30, 0x54));
+        }
+
+        #endregion
+
         #region PropChangedEvent
         public event PropertyChangedEventHandler PropertyChanged;
 
