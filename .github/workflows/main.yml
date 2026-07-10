@@ -270,102 +270,7 @@ jobs:
       if: steps.resolve_release.outputs.is_tag_release != 'true' && steps.check_release.outputs.release_exists == 'false' && steps.finalize_branch_release.outputs.publish_now != 'true'
       run: echo "Created release tag ${{ steps.resolve_release.outputs.release_tag }} during the branch run. The tag-triggered workflow run will publish the release."
 
-    # Step 8: Upload & Scan with VirusTotal
-    - name: Check Optional VirusTotal Secret
-      if: steps.check_release.outputs.release_exists == 'false' && (steps.resolve_release.outputs.is_tag_release == 'true' || steps.finalize_branch_release.outputs.publish_now == 'true')
-      id: optional_secrets
-      env:
-        VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
-      shell: pwsh
-      run: |
-        $hasVirusTotalKey = -not [string]::IsNullOrWhiteSpace($env:VIRUSTOTAL_API_KEY)
-        "has_virustotal_key=$($hasVirusTotalKey.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-
-    - name: Upload and Scan with VirusTotal
-      if: steps.check_release.outputs.release_exists == 'false' && (steps.resolve_release.outputs.is_tag_release == 'true' || steps.finalize_branch_release.outputs.publish_now == 'true') && steps.optional_secrets.outputs.has_virustotal_key == 'true'
-      id: virustotal_scan
-      env:
-        VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
-      shell: pwsh
-      run: |
-        $filePath = Join-Path $env:GITHUB_WORKSPACE "MagicChatbox-${{ env.VERSION }}.zip"
-        $apiKey = $env:VIRUSTOTAL_API_KEY
-
-        if (-not (Test-Path -LiteralPath $filePath)) {
-          Write-Error "File not found: $filePath"
-          exit 1
-        }
-
-        $fileInfo = Get-Item $filePath
-
-        if ($fileInfo.Length -gt 32MB) {
-          Write-Error "VirusTotal standard upload only supports files up to 32 MB. Use /files/upload_url for larger files."
-          exit 1
-        }
-
-        $response = Invoke-RestMethod `
-          -Uri "https://www.virustotal.com/api/v3/files" `
-          -Method Post `
-          -Headers @{
-            "x-apikey" = $apiKey
-          } `
-          -Form @{
-            "file" = $fileInfo
-          }
-
-        $analysisId = $response.data.id
-        "scan_id=$analysisId" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-
-    - name: Wait for VirusTotal Scan Report
-      if: steps.check_release.outputs.release_exists == 'false' && (steps.resolve_release.outputs.is_tag_release == 'true' || steps.finalize_branch_release.outputs.publish_now == 'true') && steps.optional_secrets.outputs.has_virustotal_key == 'true'
-      id: virustotal_report
-      env:
-        VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
-      shell: pwsh
-      run: |
-        $apiKey = $env:VIRUSTOTAL_API_KEY
-        $analysisId = "${{ steps.virustotal_scan.outputs.scan_id }}"
-
-        if ([string]::IsNullOrWhiteSpace($analysisId)) {
-          Write-Error "No VirusTotal analysis ID was returned."
-          exit 1
-        }
-
-        $maxAttempts = 20
-        $delaySeconds = 15
-        $sha256 = $null
-
-        for ($i = 1; $i -le $maxAttempts; $i++) {
-          Write-Host "Checking VirusTotal analysis status (attempt $i/$maxAttempts)..."
-
-          $response = Invoke-RestMethod `
-            -Uri "https://www.virustotal.com/api/v3/analyses/$analysisId" `
-            -Method Get `
-            -Headers @{
-              "x-apikey" = $apiKey
-            }
-
-          $status = $response.data.attributes.status
-          $sha256 = $response.meta.file_info.sha256
-
-          if ($status -eq "completed" -and -not [string]::IsNullOrWhiteSpace($sha256)) {
-            Write-Host "VirusTotal analysis completed. SHA256: $sha256"
-            break
-          }
-
-          Write-Host "Status: $status — waiting ${delaySeconds}s..."
-          Start-Sleep -Seconds $delaySeconds
-        }
-
-        if ([string]::IsNullOrWhiteSpace($sha256)) {
-          Write-Error "VirusTotal report was not ready after $maxAttempts attempts."
-          exit 1
-        }
-
-        $reportUrl = "https://www.virustotal.com/gui/file/$sha256/detection"
-        "report_url=$reportUrl" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-
-    # Step 9: Determine if this is a pre-release or final release
+    # Step 8: Determine if this is a pre-release or final release
     - name: Determine Release Type
       if: steps.check_release.outputs.release_exists == 'false' && (steps.resolve_release.outputs.is_tag_release == 'true' || steps.finalize_branch_release.outputs.publish_now == 'true')
       id: determine_release_type
@@ -417,7 +322,7 @@ jobs:
       id: create_release
       uses: softprops/action-gh-release@v2
       env:
-        GITHUB_TOKEN: ${{ secrets.MY_PAT }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ steps.resolve_release.outputs.release_tag }}
         name: ${{ steps.determine_release_type.outputs.release_name }}
@@ -427,20 +332,17 @@ jobs:
         body: |
           <div align="center">
             <h1>✨ MagicChatbox v${{ env.VERSION }} ✨</h1>
-            <img src="https://img.shields.io/github/downloads/BoiHanny/vrcosc-magicchatbox/v${{ env.VERSION }}/total?color=%23AB3BFF&label=Version%20downloads&logo=%20&style=plastic" alt="Version downloads">
+            <img src="https://img.shields.io/github/downloads/Velinixx/MagicChatbox-Fork/v${{ env.VERSION }}/total?color=%23AB3BFF&label=Version%20downloads&logo=%20&style=plastic" alt="Version downloads">
           </div>
 
           > [!IMPORTANT]
-          > **We highly recommend reading our [Terms of Service](https://github.com/BoiHanny/vrcosc-magicchatbox/blob/master/Security.md) before you download or use MagicChatBox.**  
+           > **We highly recommend reading our [Terms of Service](https://github.com/Velinixx/MagicChatbox-Fork/blob/master/Security.md) before you download or use MagicChatBox.**  
           > It doesn't take long to get through the essential points, but it's important to understand how we value and protect your privacy, as well as the rules for using our software.
 
           <div align="center">
             <p>
-              <a href="https://github.com/BoiHanny/vrcosc-magicchatbox/releases/download/${{ steps.resolve_release.outputs.release_tag }}/MagicChatbox-${{ env.VERSION }}.zip">
+              <a href="https://github.com/Velinixx/MagicChatbox-Fork/releases/download/v${{ env.VERSION }}/MagicChatbox-${{ env.VERSION }}.zip">
                 <img src="https://custom-icon-badges.herokuapp.com/badge/-Download-%23512BD4?style=for-the-badge&logo=download&logoColor=white" alt="Download">
-              </a>
-              <a href="${{ steps.virustotal_report.outputs.report_url }}">
-                <img src="https://custom-icon-badges.herokuapp.com/badge/-Virus%20Scan%20Result-blue?style=for-the-badge&logo=virustotal&logoColor=white" alt="VirusTotal">
               </a>
             </p>
           </div>
@@ -461,29 +363,11 @@ jobs:
           ---
 
           <div align="center">
-            <h2>🛡️ About VirusTotal Scan 🛡️</h2>
-            <p>We take your security seriously! Each release of MagicChatbox is scanned with VirusTotal to ensure it's free from harmful software.</p>
-            <p>However, please be aware that some antivirus engines might flag the application. This is due to the nature of certain components we use, such as:</p>
-            <ul>
-              <p>🔍 <strong>Window Activity</strong> - To show which windows you are currently focused on</p>
-              <p>🔗 <strong>MediaLink Components</strong> - For better multimedia integration</p>
-              <p>📊 <strong>Component Stats</strong> - For performance tracking</p>
-              <p>🌙 <strong>AFK Module</strong> - To detect when you are away from the keyboard</p>
-              <p>🎮 <strong>OSC Controller</strong> - To communicate with VRChat</p>
-            </ul>
-            <p>These features might trigger warnings from lesser-known scanners. Rest assured, we strive to keep our software as secure as possible and any flagged activity is closely monitored to maintain your safety.</p>
-            <p>For more details on the scan results, check the VirusTotal report linked above.</p>
-          </div>
-
-          ---
-
-          <div align="center">
             <h2>📞 Need Help? We're Here for You! 📞</h2>
             <p>Have any questions, suggestions, or feedback? Reach out to us through one of the following channels:</p>
             <ul>
               <p><strong>Our Discord:</strong> <a href="https://discord.gg/ZaSFwBfhvG">Join now!!!</a></p>
-              <p><strong>GitHub Issues:</strong> <a href="https://github.com/BoiHanny/vrcosc-magicchatbox/issues">Report a bug or submit a feature request</a></p>
-              <p><strong>Wiki:</strong> <a href="https://github.com/BoiHanny/vrcosc-magicchatbox/wiki">Help & more</a></p>
+              <p><strong>GitHub Issues:</strong> <a href="https://github.com/Velinixx/MagicChatbox-Fork/issues">Report a bug or submit a feature request</a></p>
             </ul>
             <p>We're committed to providing the best possible experience for our users. Your feedback helps us make MagicChatbox even better. Thank you for your support!</p>
           </div>
