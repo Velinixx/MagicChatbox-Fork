@@ -5,7 +5,7 @@
 	<Version>0.9.205</Version>
     <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
     <RootNamespace>vrcosc_magicchatbox</RootNamespace>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
     <UseWPF>True</UseWPF>
     <UseWindowsForms>True</UseWindowsForms>
     <Configurations>Debug;Release;Beta</Configurations>
