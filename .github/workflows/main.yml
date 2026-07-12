@@ -290,7 +290,7 @@ jobs:
             exit 1
           }
 
-          git merge-base --is-ancestor $tagCommit origin/master
+          try { git merge-base --is-ancestor $tagCommit origin/master 2>$null } catch {}
           $isMasterRelease = $LASTEXITCODE -eq 0
         }
 
@@ -301,7 +301,7 @@ jobs:
           "release_name=${{ steps.resolve_release.outputs.release_tag }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         } else {
           if ($isTagRelease) {
-            git merge-base --is-ancestor $tagCommit origin/Pre-Master
+            try { git merge-base --is-ancestor $tagCommit origin/Pre-Master 2>$null } catch {}
             $isPreMasterRelease = $LASTEXITCODE -eq 0
           } else {
             $isPreMasterRelease = $env:GITHUB_REF -eq 'refs/heads/Pre-Master'
