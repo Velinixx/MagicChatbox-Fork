@@ -458,6 +458,94 @@
                     </CheckBox.Effect>
                 </CheckBox>
 
+                <TextBlock
+                    Margin="0,0,0,6"
+                    FontFamily="Albert Sans Thin"
+                    FontSize="15"
+                    Foreground="#FF9983AD"
+                    Text="Theme" />
+
+                <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
+                    <RadioButton
+                        x:Name="DarkRadio"
+                        Margin="0,0,12,0"
+                        Checked="ThemeRadio_Checked"
+                        Content="Dark"
+                        FontFamily="Comfortaa Light"
+                        FontSize="15"
+                        Foreground="#FFB9B5C1"
+                        GroupName="AppTheme"
+                        IsChecked="True"
+                        Tag="0" />
+                    <RadioButton
+                        x:Name="LightRadio"
+                        Margin="0,0,12,0"
+                        Checked="ThemeRadio_Checked"
+                        Content="Light"
+                        FontFamily="Comfortaa Light"
+                        FontSize="15"
+                        Foreground="#FFB9B5C1"
+                        GroupName="AppTheme"
+                        Tag="1" />
+                    <RadioButton
+                        x:Name="MidnightRadio"
+                        Margin="0,0,12,0"
+                        Checked="ThemeRadio_Checked"
+                        Content="Midnight"
+                        FontFamily="Comfortaa Light"
+                        FontSize="15"
+                        Foreground="#FFB9B5C1"
+                        GroupName="AppTheme"
+                        Tag="2" />
+                    <RadioButton
+                        x:Name="OriginalRadio"
+                        Margin="0,0,12,0"
+                        Checked="ThemeRadio_Checked"
+                        Content="Classic"
+                        FontFamily="Comfortaa Light"
+                        FontSize="15"
+                        Foreground="#FFB9B5C1"
+                        GroupName="AppTheme"
+                        Tag="3" />
+                    <RadioButton
+                        x:Name="CustomThemeRadio"
+                        Checked="ThemeRadio_Checked"
+                        Content="Custom"
+                        FontFamily="Comfortaa Light"
+                        FontSize="15"
+                        Foreground="#FFB9B5C1"
+                        GroupName="AppTheme"
+                        Tag="4" />
+                </StackPanel>
+
+                <StackPanel
+                    x:Name="CustomThemePanel"
+                    Margin="0,0,0,10"
+                    Orientation="Horizontal"
+                    Visibility="Collapsed">
+                    <Button
+                        x:Name="OpenGradientEditorBtn"
+                        Width="180"
+                        Height="28"
+                        Click="OpenGradientEditorBtn_Click"
+                        Content="Edit custom gradient"
+                        Style="{DynamicResource Status_Button_style}" />
+                    <TextBlock
+                        x:Name="ActiveGradientLabel"
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Center"
+                        FontFamily="Albert Sans Thin"
+                        FontSize="12"
+                        Foreground="#FF7D7397"
+                        Text="Active" />
+                    <Border
+                        x:Name="ActiveGradientSwatch"
+                        Width="20"
+                        Height="20"
+                        Margin="4,0,0,0"
+                        CornerRadius="3" />
+                </StackPanel>
+
                 <Button
                     x:Name="Rollback"
                     Width="auto"

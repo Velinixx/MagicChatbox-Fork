@@ -102,6 +102,9 @@ public partial class AppSettings : VersionedSettings
 
     [ObservableProperty] private string _acceptedTosVersion = string.Empty;
 
+    [ObservableProperty] private int _selectedTheme = 0;
+    [ObservableProperty] private string _gradientConfigJson = "{\"type\":\"linear\",\"angle\":0,\"stops\":[{\"color\":\"#3B3054\",\"position\":0},{\"color\":\"#240E55\",\"position\":100}]}";
+
     partial void OnScanningIntervalChanged(double value)
     {
         if (double.IsNaN(value) || double.IsInfinity(value))

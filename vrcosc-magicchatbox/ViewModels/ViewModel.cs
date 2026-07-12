@@ -4,6 +4,7 @@ using System;
 using System.ComponentModel;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Windows.Media;
 using vrcosc_magicchatbox.Classes.DataAndSecurity;
 using vrcosc_magicchatbox.Classes.Modules;
 using vrcosc_magicchatbox.Core.Configuration;
@@ -120,6 +121,15 @@ namespace vrcosc_magicchatbox.ViewModels
 
             Emojis.ShuffleEmojis();
             Emojis.CurrentEmoji = Emojis.GetNextEmoji();
+
+            AppSettingsInstance.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(AppSettings.SelectedTheme) ||
+                    e.PropertyName == nameof(AppSettings.GradientConfigJson))
+                {
+                    RefreshWindowBackground();
+                }
+            };
         }
 
         [RelayCommand]
@@ -266,6 +276,70 @@ namespace vrcosc_magicchatbox.ViewModels
                 }
             }
         }
+        #endregion
+
+        #region Theme
+
+        public int SelectedTheme => AppSettingsInstance.SelectedTheme;
+
+        public Brush WindowBackgroundBrush
+        {
+            get
+            {
+                switch (AppSettingsInstance.SelectedTheme)
+                {
+                    case 1:
+                        return new SolidColorBrush(Color.FromRgb(0xE8, 0xE0, 0xF0));
+                    case 2:
+                        return new SolidColorBrush(Color.FromRgb(0x00, 0x00, 0x00));
+                    case 3:
+                        return new SolidColorBrush(Color.FromRgb(0x24, 0x0E, 0x55));
+                    case 4:
+                        return BuildGradientBrush();
+                    default:
+                        return new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E));
+                }
+            }
+        }
+
+        public Brush WindowGridBackgroundBrush
+        {
+            get
+            {
+                switch (AppSettingsInstance.SelectedTheme)
+                {
+                    case 1:
+                        return new SolidColorBrush(Color.FromRgb(0xF5, 0xF0, 0xFA));
+                    case 2:
+                        return new SolidColorBrush(Color.FromRgb(0x00, 0x00, 0x00));
+                    case 3:
+                        return new SolidColorBrush(Color.FromRgb(0x3B, 0x30, 0x54));
+                    case 4:
+                        return BuildGradientBrush();
+                    default:
+                        return new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x2A));
+                }
+            }
+        }
+
+        public void RefreshWindowBackground()
+        {
+            NotifyPropertyChanged(nameof(WindowBackgroundBrush));
+            NotifyPropertyChanged(nameof(WindowGridBackgroundBrush));
+        }
+
+        private Brush BuildGradientBrush()
+        {
+            try
+            {
+                var grad = Newtonsoft.Json.JsonConvert.DeserializeObject<Models.GradientConfig>(AppSettingsInstance.GradientConfigJson);
+                if (grad != null)
+                    return UI.Dialogs.GradientEditorDialog.BuildGradientBrush(grad);
+            }
+            catch { }
+            return new SolidColorBrush(Color.FromRgb(0x3B, 0x30, 0x54));
+        }
+
         #endregion
 
         #region PropChangedEvent

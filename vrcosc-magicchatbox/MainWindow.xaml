@@ -39,7 +39,7 @@
         <Border
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
-            Background="{StaticResource SurfaceDarkBrush}"
+            Background="{Binding WindowBackgroundBrush, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
             BorderBrush="{StaticResource SurfaceDarkBrush}"
             BorderThickness="1">
             <Border.Effect>
@@ -48,7 +48,7 @@
                     KernelType="Gaussian"
                     Radius="{Binding MainWindowBlurEffect}" />
             </Border.Effect>
-            <Grid HorizontalAlignment="Stretch" Background="{StaticResource SurfaceCardBrush}">
+            <Grid HorizontalAlignment="Stretch" Background="{Binding WindowGridBackgroundBrush, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}">
 
 
                 <Grid.RowDefinitions>
@@ -130,7 +130,7 @@
                     Panel.ZIndex="100" />
 
 
-                <Grid Grid.ColumnSpan="2" Background="{StaticResource SurfacePrimaryBrush}">
+                <Grid Grid.ColumnSpan="2" Background="{Binding WindowBackgroundBrush, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}">
 
                     <Grid.Effect>
                         <DropShadowEffect
