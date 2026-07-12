@@ -5,6 +5,7 @@ on:
     branches:
       - 'Pre-Master'
       - 'master'
+      - 'rebase-v0.9.205'
     tags:
       - 'v*'
 
