@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using vrcosc_magicchatbox.Classes.Modules;
 using vrcosc_magicchatbox.ViewModels;
 using vrcosc_magicchatbox.ViewModels.Models;
 
