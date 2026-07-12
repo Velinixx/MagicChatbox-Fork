@@ -6,7 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using vrcosc_magicchatbox.ViewModels;
-using vrcosc_magicchatbox.ViewModels.Models;
+using GradientStopModel = vrcosc_magicchatbox.ViewModels.Models.GradientStop;
 
 namespace vrcosc_magicchatbox.UI.Dialogs
 {
@@ -46,10 +46,10 @@ namespace vrcosc_magicchatbox.UI.Dialogs
             {
                 type = "linear",
                 angle = 0,
-                stops = new List<GradientStop>
+                stops = new List<GradientStopModel>
                 {
-                    new GradientStop { color = "#3B3054", position = 0 },
-                    new GradientStop { color = "#240E55", position = 100 }
+                    new GradientStopModel { color = "#3B3054", position = 0 },
+                    new GradientStopModel { color = "#240E55", position = 100 }
                 }
             };
         }
@@ -314,7 +314,7 @@ namespace vrcosc_magicchatbox.UI.Dialogs
 
         private void AddStop_Click(object sender, RoutedEventArgs e)
         {
-            _gradient.stops.Add(new GradientStop
+            _gradient.stops.Add(new GradientStopModel
             {
                 color = "#7B7195",
                 position = 50
