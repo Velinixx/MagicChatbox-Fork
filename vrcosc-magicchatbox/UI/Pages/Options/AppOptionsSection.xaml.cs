@@ -17,13 +17,15 @@ public partial class AppOptionsSection : UserControl
         Loaded += (_, _) => SyncThemeUI();
     }
 
-    private AppSettings AppSettings => ((AppOptionsSectionViewModel)DataContext).AppSettings;
+    private AppSettings AppSettings => DataContext is AppOptionsSectionViewModel vm ? vm.AppSettings : null;
 
     private void ThemeRadio_Checked(object sender, RoutedEventArgs e)
     {
+        var settings = AppSettings;
+        if (settings == null) return;
         if (sender is RadioButton rb && rb.Tag is string tagStr && int.TryParse(tagStr, out int theme))
         {
-            AppSettings.SelectedTheme = theme;
+            settings.SelectedTheme = theme;
             CustomThemePanel.Visibility = theme == 4 ? Visibility.Visible : Visibility.Collapsed;
             UpdateActiveGradientSwatch();
         }
@@ -31,9 +33,11 @@ public partial class AppOptionsSection : UserControl
 
     private void OpenGradientEditorBtn_Click(object sender, RoutedEventArgs e)
     {
+        var settings = AppSettings;
+        if (settings == null) return;
         var dialog = new Dialogs.GradientEditorDialog
         {
-            InitialJson = AppSettings.GradientConfigJson,
+            InitialJson = settings.GradientConfigJson,
             Owner = Window.GetWindow(this)
         };
         dialog.ShowDialog();
@@ -42,11 +46,13 @@ public partial class AppOptionsSection : UserControl
 
     private void UpdateActiveGradientSwatch()
     {
+        var settings = AppSettings;
+        if (settings == null) return;
         try
         {
-            if (AppSettings.SelectedTheme == 4)
+            if (settings.SelectedTheme == 4)
             {
-                string json = AppSettings.GradientConfigJson;
+                string json = settings.GradientConfigJson;
                 if (!string.IsNullOrEmpty(json))
                 {
                     var grad = JsonConvert.DeserializeObject<GradientConfig>(json);
@@ -62,7 +68,9 @@ public partial class AppOptionsSection : UserControl
 
     public void SyncThemeUI()
     {
-        int theme = AppSettings.SelectedTheme;
+        var settings = AppSettings;
+        if (settings == null) return;
+        int theme = settings.SelectedTheme;
         var radios = new[] { DarkRadio, LightRadio, MidnightRadio, OriginalRadio, CustomThemeRadio };
         if (theme >= 0 && theme < radios.Length)
             radios[theme].IsChecked = true;
