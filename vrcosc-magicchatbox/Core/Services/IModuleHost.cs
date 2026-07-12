@@ -19,6 +19,7 @@ public interface IModuleHost : INotifyPropertyChanged
     SpotifyModule Spotify { get; set; }
     VrcLogModule VrcRadar { get; set; }
     PulsoidModule Pulsoid { get; set; }
+    C20HeartRateModule C20HeartRate { get; set; }
     SoundpadModule Soundpad { get; set; }
     TrackerBatteryModule TrackerBattery { get; set; }
     WhisperModule Whisper { get; set; }

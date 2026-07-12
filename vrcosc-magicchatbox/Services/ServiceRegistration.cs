@@ -578,6 +578,9 @@ public static class ServiceRegistration
             new Lazy<IModuleHost>(() => sp.GetRequiredService<IModuleHost>()),
             sp.GetRequiredService<ISettingsProvider<IntegrationSettings>>(),
             sp.GetRequiredService<IAppState>()));
+        services.AddSingleton<IOscProvider>(sp => new C20HeartRateOscProvider(
+            new Lazy<IModuleHost>(() => sp.GetRequiredService<IModuleHost>()),
+            sp.GetRequiredService<ISettingsProvider<IntegrationSettings>>()));
         services.AddSingleton<IOscProvider>(sp => new TrackerBatteryOscProvider(
             new Lazy<IModuleHost>(() => sp.GetRequiredService<IModuleHost>()),
             sp.GetRequiredService<ISettingsProvider<IntegrationSettings>>()));

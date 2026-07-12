@@ -25,6 +25,7 @@ public partial class ModuleHost : ObservableObject, IModuleHost
     [ObservableProperty] private SpotifyModule _spotify;
     [ObservableProperty] private VrcLogModule _vrcRadar;
     [ObservableProperty] private PulsoidModule _pulsoid;
+    [ObservableProperty] private C20HeartRateModule _c20HeartRate;
     [ObservableProperty] private SoundpadModule _soundpad;
     [ObservableProperty] private TrackerBatteryModule _trackerBattery;
     [ObservableProperty] private WhisperModule _whisper;

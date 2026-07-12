@@ -16,7 +16,7 @@ public partial class IntegrationDisplayState : ObservableObject
 {
     public static readonly IReadOnlyList<string> DefaultSortOrder = new[]
     {
-        "Status", "Window", "Twitch", "TikTokLive", "Discord", "Spotify", "VrcRadar", "HeartRate", "Component",
+        "Status", "Window", "Twitch", "TikTokLive", "Discord", "Spotify", "VrcRadar", "C20HeartRate", "HeartRate", "Component",
         "TrackerBattery", "Network", "Weather", "Time", "Soundpad",
         "MediaLink"
     };
@@ -90,6 +90,7 @@ public partial class IntegrationDisplayState : ObservableObject
     [ObservableProperty] private string _vrcRadarOpacity = "1";
     [ObservableProperty] private string _spotifyOpacity = "1";
     [ObservableProperty] private string _heartRateOpacity = "1";
+    [ObservableProperty] private string _c20HeartRateOpacity = "1";
     [ObservableProperty] private string _trackerBatteryOpacity = "1";
     [ObservableProperty] private string _componentStatOpacity = "1";
     [ObservableProperty] private string _networkStatsOpacity = "1";
@@ -127,6 +128,7 @@ public partial class IntegrationDisplayState : ObservableObject
             case "VrcRadar": VrcRadarOpacity = opacity; break;
             case "Spotify": SpotifyOpacity = opacity; break;
             case "HeartRate": HeartRateOpacity = opacity; break;
+            case "C20HeartRate": C20HeartRateOpacity = opacity; break;
             case "TrackerBattery": TrackerBatteryOpacity = opacity; break;
             case "ComponentStat": ComponentStatOpacity = opacity; break;
             case "NetworkStatistics": NetworkStatsOpacity = opacity; break;
@@ -150,6 +152,7 @@ public partial class IntegrationDisplayState : ObservableObject
         VrcRadarOpacity = "1";
         SpotifyOpacity = "1";
         HeartRateOpacity = "1";
+        C20HeartRateOpacity = "1";
         TrackerBatteryOpacity = "1";
         ComponentStatOpacity = "1";
         NetworkStatsOpacity = "1";

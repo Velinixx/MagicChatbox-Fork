@@ -47,6 +47,11 @@ public partial class IntegrationSettings : VersionedSettings
     [ObservableProperty] private bool _intgrHeartRate_DESKTOP = false;
     [ObservableProperty] private bool _intgrHeartRate_OSC = false;
 
+    [ObservableProperty] private bool _intgrC20HeartRate = true;
+    [ObservableProperty] private bool _intgrC20HeartRate_VR = true;
+    [ObservableProperty] private bool _intgrC20HeartRate_DESKTOP = true;
+    [ObservableProperty] private bool _intgrC20HeartRate_OSC = true;
+
     [ObservableProperty] private bool _intgrCurrentTime_VR = true;
     [ObservableProperty] private bool _intgrCurrentTime_DESKTOP = false;
 

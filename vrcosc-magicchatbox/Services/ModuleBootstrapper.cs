@@ -181,6 +181,12 @@ public class ModuleBootstrapper
             _pulsoidOAuth,
             _pulsoidSettingsProvider,
             _toast));
+        var c20 = await CreateRuntimeModuleAsync("C20HeartRate", () => new C20HeartRateModule(
+            _appState,
+            _oscSender,
+            integrationSettings,
+            _dispatcher,
+            _env));
         var soundpad = await CreateRuntimeModuleAsync("Soundpad", () => new SoundpadModule(
             1000,
             _appState,
@@ -239,6 +245,13 @@ public class ModuleBootstrapper
                 _host.Pulsoid = pulsoid;
                 _host.RegisterModule(pulsoid);
                 integrationSettings.PropertyChanged += pulsoid.PropertyChangedHandler;
+            }
+
+            if (c20 != null)
+            {
+                _host.C20HeartRate = c20;
+                _host.RegisterModule(c20);
+                integrationSettings.PropertyChanged += c20.PropertyChangedHandler;
             }
 
             if (soundpad != null)
@@ -369,10 +382,13 @@ public class ModuleBootstrapper
             // ViewModel.PropertyChanged carries IsVRRunning and PulsoidAuthConnected changes
             if (_appState is System.ComponentModel.INotifyPropertyChanged notifier)
             {
-                if (pulsoid != null)
-                    notifier.PropertyChanged += pulsoid.PropertyChangedHandler;
+            if (pulsoid != null)
+                notifier.PropertyChanged += pulsoid.PropertyChangedHandler;
 
-                if (soundpad != null)
+            if (c20 != null)
+                notifier.PropertyChanged += c20.PropertyChangedHandler;
+
+            if (soundpad != null)
                     notifier.PropertyChanged += soundpad.PropertyChangedHandler;
 
                 if (tikTokLive != null)
