@@ -4,7 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using vrcosc_magicchatbox.Classes.DataAndSecurity;
 using vrcosc_magicchatbox.Classes.Modules;
 using vrcosc_magicchatbox.Core.Configuration;
-using vrcosc_magicchatbox.Services;
+using vrcosc_magicchatbox.Core.Services;
 
 namespace vrcosc_magicchatbox.ViewModels.Sections;
 
