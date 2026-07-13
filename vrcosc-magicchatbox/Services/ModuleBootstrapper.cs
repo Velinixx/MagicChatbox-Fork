@@ -503,6 +503,21 @@ public class ModuleBootstrapper
                 catch (Exception ex) { Logging.WriteInfo($"VrcRadar auto-start failed: {ex.Message}"); }
             });
         }
+
+        // C20 auto-start: connect to watch if integration toggles are enabled
+        if (c20 != null)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _startupComplete.Task;
+                    Logging.WriteInfo("C20: Auto-starting on startup...");
+                    await c20.StartAsync();
+                }
+                catch (Exception ex) { Logging.WriteInfo($"C20 auto-start failed: {ex.Message}"); }
+            });
+        }
     }
 
     private static async Task<T?> CreateRuntimeModuleAsync<T>(string moduleName, Func<T> factory)
