@@ -572,6 +572,11 @@
                         Margin="0,5,0,0"
                         VerticalAlignment="Top">
                         <StackPanel Orientation="Horizontal">
+                            <Button
+                                Margin="0,0,5,0"
+                                Command="{Binding ActivateSettingCommand}"
+                                CommandParameter="Settings_C20HeartRate"
+                                Style="{StaticResource CustomizePillButton}" />
                             <ToggleButton
                                 Width="60"
                                 Height="19"

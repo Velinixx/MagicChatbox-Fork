@@ -1,0 +1,188 @@
+<UserControl
+    x:Class="vrcosc_magicchatbox.UI.Pages.Options.C20HeartRateSection"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:sections="clr-namespace:vrcosc_magicchatbox.ViewModels.Sections"
+    d:DataContext="{d:DesignInstance Type=sections:C20HeartRateSectionViewModel,
+                                     IsDesignTimeCreatable=False}"
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/UI/Resources/SharedConverters.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Margin="0,5,0,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.Background>
+            <LinearGradientBrush SpreadMethod="Pad" StartPoint="1,1" EndPoint="0,0">
+                <GradientStop Color="{StaticResource SurfaceGradientStartColor}" />
+                <GradientStop Offset="1" Color="{StaticResource SurfaceGradientEndColor}" />
+            </LinearGradientBrush>
+        </Grid.Background>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <ToggleButton
+                Grid.Column="0"
+                Width="Auto"
+                Height="30"
+                HorizontalAlignment="Left"
+                FontSize="15"
+                FontWeight="Bold"
+                Foreground="{StaticResource TextSectionHeaderBrush}"
+                IsChecked="{Binding AppSettings.Settings_C20HeartRate, Mode=TwoWay}"
+                Style="{StaticResource ExpandCollapseToggleButtonStyle}"
+                Tag="C20 Heart Rate options"
+                TextOptions.TextRenderingMode="ClearType" />
+
+            <TextBlock
+                Grid.Column="1"
+                Width="auto"
+                Margin="10,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Cursor="Hand"
+                FontFamily="Albert Sans Thin"
+                FontSize="12"
+                Foreground="{StaticResource AccentTealBrush}"
+                Text="Info"
+                TextDecorations="Underline" />
+        </Grid>
+        <Grid
+            Grid.Row="1"
+            Height="Auto"
+            Margin="34,10,0,0"
+            Visibility="{Binding AppSettings.Settings_C20HeartRate, Converter={StaticResource InverseBoolToHiddenConverter}, UpdateSourceTrigger=PropertyChanged}">
+            <StackPanel>
+                <!-- BLE Address -->
+                <Border Style="{StaticResource OptionCardStyle}" Width="500">
+                    <StackPanel Margin="5">
+                        <TextBlock
+                            FontFamily="Albert Sans Thin"
+                            FontSize="15"
+                            Foreground="{StaticResource TextHeaderBrush}"
+                            Text="BLE Address"
+                            TextWrapping="Wrap" />
+                        <TextBox
+                            Width="180"
+                            Height="25"
+                            HorizontalAlignment="Left"
+                            FontFamily="Consolas"
+                            Text="{Binding ModuleSettings.BleAddress, Mode=TwoWay}" />
+                        <TextBlock
+                            FontFamily="Albert Sans Thin"
+                            FontSize="10"
+                            Foreground="{StaticResource TextMutedBrush}"
+                            Text="Bluetooth MAC address of your C20 smartwatch (e.g. 96:D6:AF:D0:2B:6E)"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Heart Rate Display -->
+                <Border Style="{StaticResource OptionCardStyle}" Width="500">
+                    <StackPanel Margin="5">
+                        <TextBlock
+                            FontFamily="Albert Sans Thin"
+                            FontSize="15"
+                            Foreground="{StaticResource TextHeaderBrush}"
+                            Text="Heart Rate Number"
+                            TextWrapping="Wrap" />
+                        <CheckBox
+                            Margin="0,5,0,0"
+                            Content="Smooth heart rate"
+                            IsChecked="{Binding ModuleSettings.SmoothHeartRate, Mode=TwoWay}"
+                            Style="{DynamicResource SettingsCheckbox}" />
+                        <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontFamily="Albert Sans Thin"
+                                FontSize="12"
+                                Foreground="{StaticResource TextLabelBrush}"
+                                Text="Smoothing window:"
+                                TextWrapping="Wrap" />
+                            <TextBox
+                                Width="50"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                FontFamily="Consolas"
+                                Text="{Binding ModuleSettings.SmoothHeartRateTimeSpan, Mode=TwoWay}" />
+                            <TextBlock
+                                Margin="5,0,0,0"
+                                VerticalAlignment="Center"
+                                FontFamily="Albert Sans Thin"
+                                FontSize="10"
+                                Foreground="{StaticResource TextMutedBrush}"
+                                Text="samples"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <CheckBox
+                            Margin="0,5,0,0"
+                            Content="Show BPM suffix (' bpm')"
+                            IsChecked="{Binding ModuleSettings.ShowBpmSuffix, Mode=TwoWay}"
+                            Style="{DynamicResource SettingsCheckbox}" />
+                        <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontFamily="Albert Sans Thin"
+                                FontSize="12"
+                                Foreground="{StaticResource TextLabelBrush}"
+                                Text="Heart Rate Icon:"
+                                TextWrapping="Wrap" />
+                            <TextBox
+                                Width="40"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                FontFamily="Segoe UI"
+                                FontSize="14"
+                                Text="{Binding ModuleSettings.HeartRateIcon, Mode=TwoWay}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Status -->
+                <Border Style="{StaticResource OptionCardStyle}" Width="500">
+                    <StackPanel Margin="5">
+                        <TextBlock
+                            FontFamily="Albert Sans Thin"
+                            FontSize="15"
+                            Foreground="{StaticResource TextHeaderBrush}"
+                            Text="Status"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            FontFamily="Albert Sans Thin"
+                            FontSize="12"
+                            Foreground="{StaticResource TextLabelBrush}"
+                            TextWrapping="Wrap">
+                            <Run Text="Device: " />
+                            <Run
+                                FontWeight="Bold"
+                                Text="{Binding HasDevice }" />
+                        </TextBlock>
+                        <TextBlock
+                            FontFamily="Albert Sans Thin"
+                            FontSize="12"
+                            Foreground="{StaticResource TextLabelBrush}"
+                            TextWrapping="Wrap">
+                            <Run Text="Heart Rate: " />
+                            <Run
+                                FontWeight="Bold"
+                                Text="{Binding HeartRate}" />
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -76,11 +76,6 @@ public partial class C20Settings : ObservableObject
 
 public partial class C20HeartRateModule : ObservableObject, IModule
 {
-    private const ushort C20_ADDRESS_PART1 = 0xD696;
-    private const ushort C20_ADDRESS_PART2 = 0xAFD0;
-    private const ushort C20_ADDRESS_PART3 = 0x2B6E;
-    private static readonly ulong C20_BLE_ADDRESS = ((ulong)C20_ADDRESS_PART1 << 32) | ((ulong)C20_ADDRESS_PART2 << 16) | C20_ADDRESS_PART3;
-
     private static readonly Guid HR_SERVICE_UUID = new Guid("0000180d-0000-1000-8000-00805f9b34fb");
     private static readonly Guid HR_MEASUREMENT_UUID = new Guid("00002a37-0000-1000-8000-00805f9b34fb");
 
@@ -109,6 +104,23 @@ public partial class C20HeartRateModule : ObservableObject, IModule
 
     [ObservableProperty]
     private int heartRate;
+
+    private ulong GetBleAddress()
+    {
+        if (!string.IsNullOrWhiteSpace(Settings.BleAddress))
+        {
+            var parts = Settings.BleAddress.Trim().Split(':');
+            if (parts.Length == 6)
+            {
+                try
+                {
+                    return ulong.Parse(string.Concat(parts), System.Globalization.NumberStyles.HexNumber);
+                }
+                catch { }
+            }
+        }
+        return 0x96D6AFD02B6E; // fallback default
+    }
 
     public string Name => "C20HeartRate";
     public bool IsEnabled { get; set; } = true;
@@ -162,7 +174,19 @@ public partial class C20HeartRateModule : ObservableObject, IModule
             int hr = HeartRate;
             string icon = Settings.HeartRateIcon;
             string bpm = Settings.ShowBpmSuffix ? " bpm" : "";
-            return $"{icon} {hr}{bpm}";
+            string result = $"{icon} {hr}{bpm}";
+
+            // Match Pulsoid style: suffix, icon before number
+            if (Settings.SmoothHeartRate && _heartRateHistory.Count > 0)
+            {
+                int avg = (int)_heartRateHistory.Average();
+                if (avg > 0 && avg != hr)
+                {
+                    result = $"{icon} {avg}{bpm}";
+                }
+            }
+
+            return result;
         }
     }
 
@@ -213,7 +237,7 @@ public partial class C20HeartRateModule : ObservableObject, IModule
             _cts = new CancellationTokenSource();
             await _dispatcher.InvokeAsync(() => DeviceConnected = false);
 
-            _device = await BluetoothLEDevice.FromBluetoothAddressAsync(C20_BLE_ADDRESS);
+            _device = await BluetoothLEDevice.FromBluetoothAddressAsync(GetBleAddress());
             if (_device == null)
             {
                 Logging.WriteInfo("C20: Device not found. Make sure the watch is nearby and awake.");
@@ -354,9 +378,12 @@ public partial class C20HeartRateModule : ObservableObject, IModule
                 _oscSender.SendOscParam("/avatar/parameters/C20_HRPercent", hrPercent);
                 _oscSender.SendOscParam("/avatar/parameters/C20_FullHRPercent", fullHRPercent);
 
+                // Pulsoid-compatible parameter names (same as Pulsoid module sends)
                 _oscSender.SendOscParam("/avatar/parameters/isHRConnected", DeviceConnected);
                 _oscSender.SendOscParam("/avatar/parameters/HR", hr);
                 _oscSender.SendOscParam("/avatar/parameters/HRPercent", hrPercent);
+                _oscSender.SendOscParam("/avatar/parameters/FullHRPercent", fullHRPercent);
+                _oscSender.SendOscParam("/avatar/parameters/HRFloat", hr / 220f);
 
                 int ones = hr % 10;
                 int tens = (hr / 10) % 10;
@@ -364,6 +391,9 @@ public partial class C20HeartRateModule : ObservableObject, IModule
                 _oscSender.SendOscParam("/avatar/parameters/onesHR", ones);
                 _oscSender.SendOscParam("/avatar/parameters/tensHR", tens);
                 _oscSender.SendOscParam("/avatar/parameters/hundredsHR", hundreds);
+
+                _oscSender.SendOscParam("/avatar/parameters/HRMin", hr);
+                _oscSender.SendOscParam("/avatar/parameters/HRMax", hr);
             }
         }
     }

@@ -447,6 +447,7 @@ public static class SettingsMigrationService
         new("OptionsTabState", "Settings_WindowActivity",      "Settings_WindowActivity"),
         new("OptionsTabState", "Settings_VrcRadar",            "Settings_VrcRadar"),
         new("OptionsTabState", "Settings_TrackerBattery",      "Settings_TrackerBattery"),
+        new("OptionsTabState", "Settings_C20HeartRate",        "Settings_C20HeartRate"),
     ];
 
     private static List<MigrationEntry> IntegrationMigrationMap() =>

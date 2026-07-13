@@ -46,6 +46,7 @@ public sealed class MenuNavigationService : IMenuNavigationService
             { "Settings_Spotify", v => appSettings.Settings_Spotify = v },
             { "Settings_Time", v => appSettings.Settings_Time = v },
             { "Settings_HeartRate", v => appSettings.Settings_HeartRate = v },
+            { "Settings_C20HeartRate", v => appSettings.Settings_C20HeartRate = v },
             { "Settings_Status", v => appSettings.Settings_Status = v },
             { "Settings_VrcRadar", v => appSettings.Settings_VrcRadar = v },
             { "Settings_EggDev", v => appSettings.SettingsDev = v }

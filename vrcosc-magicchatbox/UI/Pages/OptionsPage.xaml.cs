@@ -42,6 +42,7 @@ public partial class OptionsPage : UserControl
             ["Settings_Status"] = OptionsWrapper_Status,
             ["Settings_VrcRadar"] = OptionsWrapper_VrcRadar,
             ["Settings_HeartRate"] = OptionsWrapper_Pulsoid,
+            ["Settings_C20HeartRate"] = OptionsWrapper_C20HeartRate,
             ["Settings_Time"] = OptionsWrapper_Time,
             ["Settings_Weather"] = OptionsWrapper_Weather,
             ["Settings_Twitch"] = OptionsWrapper_Twitch,

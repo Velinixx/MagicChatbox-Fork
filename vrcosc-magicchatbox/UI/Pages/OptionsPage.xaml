@@ -41,6 +41,13 @@
             </ContentControl>
 
             <ContentControl
+                x:Name="OptionsWrapper_C20HeartRate"
+                Style="{StaticResource OptionSectionWithResetStyle}"
+                Tag="c20-heartrate">
+                <options:C20HeartRateSection x:Name="Section_C20HeartRate" DataContext="{Binding C20HeartRateSection}" />
+            </ContentControl>
+
+            <ContentControl
                 x:Name="OptionsWrapper_Time"
                 Style="{StaticResource OptionSectionWithResetStyle}"
                 Tag="time">
