@@ -66,26 +66,56 @@
             Margin="34,10,0,0"
             Visibility="{Binding AppSettings.Settings_C20HeartRate, Converter={StaticResource InverseBoolToHiddenConverter}, UpdateSourceTrigger=PropertyChanged}">
             <StackPanel>
-                <!-- BLE Address -->
+                <!-- hr_bridge connection -->
                 <Border Style="{StaticResource OptionCardStyle}" Width="500">
                     <StackPanel Margin="5">
                         <TextBlock
                             FontFamily="Albert Sans Thin"
                             FontSize="15"
                             Foreground="{StaticResource TextHeaderBrush}"
-                            Text="BLE Address"
+                            Text="hr_bridge connection"
                             TextWrapping="Wrap" />
-                        <TextBox
-                            Width="180"
-                            Height="25"
-                            HorizontalAlignment="Left"
-                            FontFamily="Consolas"
-                            Text="{Binding ModuleSettings.BleAddress, Mode=TwoWay}" />
+                        <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontFamily="Albert Sans Thin"
+                                FontSize="12"
+                                Foreground="{StaticResource TextLabelBrush}"
+                                Text="TCP Port:"
+                                TextWrapping="Wrap" />
+                            <TextBox
+                                Width="60"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                FontFamily="Consolas"
+                                Text="{Binding ModuleSettings.TcpPort, Mode=TwoWay}" />
+                        </StackPanel>
+                        <CheckBox
+                            Margin="0,5,0,0"
+                            Content="Auto-launch hr_bridge"
+                            IsChecked="{Binding ModuleSettings.AutoLaunchBridge, Mode=TwoWay}"
+                            Style="{DynamicResource SettingsCheckbox}" />
+                        <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontFamily="Albert Sans Thin"
+                                FontSize="12"
+                                Foreground="{StaticResource TextLabelBrush}"
+                                Text="Path:"
+                                TextWrapping="Wrap" />
+                            <TextBox
+                                Width="200"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                FontFamily="Consolas"
+                                FontSize="11"
+                                Text="{Binding ModuleSettings.BridgePath, Mode=TwoWay}" />
+                        </StackPanel>
                         <TextBlock
                             FontFamily="Albert Sans Thin"
                             FontSize="10"
                             Foreground="{StaticResource TextMutedBrush}"
-                            Text="Bluetooth MAC address of your C20 smartwatch (e.g. 96:D6:AF:D0:2B:6E)"
+                            Text="hr_bridge (hr_bridge.exe) should be placed next to MagicChatbox.exe. Default: hr_bridge.exe in the app directory."
                             TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>

@@ -3,8 +3,10 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,9 +14,6 @@ using vrcosc_magicchatbox.Classes.DataAndSecurity;
 using vrcosc_magicchatbox.Core.Configuration;
 using vrcosc_magicchatbox.Core.State;
 using vrcosc_magicchatbox.Services;
-using Windows.Devices.Bluetooth;
-using Windows.Devices.Bluetooth.GenericAttributeProfile;
-using Windows.Storage.Streams;
 
 namespace vrcosc_magicchatbox.Classes.Modules;
 
@@ -36,6 +35,15 @@ public partial class C20Settings : ObservableObject
 
     [ObservableProperty]
     private bool showBpmSuffix = false;
+
+    [ObservableProperty]
+    private int tcpPort = 9876;
+
+    [ObservableProperty]
+    private bool autoLaunchBridge = true;
+
+    [ObservableProperty]
+    private string bridgePath = "hr_bridge.exe";
 
     public static string GetFullSettingsPath(string dataPath)
     {
@@ -76,11 +84,9 @@ public partial class C20Settings : ObservableObject
 
 public partial class C20HeartRateModule : ObservableObject, IModule
 {
-    private static readonly Guid HR_SERVICE_UUID = new Guid("0000180d-0000-1000-8000-00805f9b34fb");
-    private static readonly Guid HR_MEASUREMENT_UUID = new Guid("00002a37-0000-1000-8000-00805f9b34fb");
-
-    private BluetoothLEDevice _device;
-    private GattCharacteristic _hrCharacteristic;
+    private TcpClient _tcpClient;
+    private StreamReader _tcpReader;
+    private Process _bridgeProcess;
     private CancellationTokenSource _cts;
     private bool _isMonitoringStarted;
     private readonly Queue<int> _heartRateHistory = new();
@@ -104,23 +110,6 @@ public partial class C20HeartRateModule : ObservableObject, IModule
 
     [ObservableProperty]
     private int heartRate;
-
-    private ulong GetBleAddress()
-    {
-        if (!string.IsNullOrWhiteSpace(Settings.BleAddress))
-        {
-            var parts = Settings.BleAddress.Trim().Split(':');
-            if (parts.Length == 6)
-            {
-                try
-                {
-                    return ulong.Parse(string.Concat(parts), System.Globalization.NumberStyles.HexNumber);
-                }
-                catch { }
-            }
-        }
-        return 0x96D6AFD02B6E; // fallback default
-    }
 
     public string Name => "C20HeartRate";
     public bool IsEnabled { get; set; } = true;
@@ -176,14 +165,11 @@ public partial class C20HeartRateModule : ObservableObject, IModule
             string bpm = Settings.ShowBpmSuffix ? " bpm" : "";
             string result = $"{icon} {hr}{bpm}";
 
-            // Match Pulsoid style: suffix, icon before number
             if (Settings.SmoothHeartRate && _heartRateHistory.Count > 0)
             {
                 int avg = (int)_heartRateHistory.Average();
                 if (avg > 0 && avg != hr)
-                {
                     result = $"{icon} {avg}{bpm}";
-                }
             }
 
             return result;
@@ -227,6 +213,42 @@ public partial class C20HeartRateModule : ObservableObject, IModule
         }
     }
 
+    private void LaunchBridge()
+    {
+        if (_bridgeProcess != null && !_bridgeProcess.HasExited) return;
+        if (!Settings.AutoLaunchBridge) return;
+
+        var path = Settings.BridgePath;
+        if (!Path.IsPathRooted(path))
+            path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
+
+        if (!File.Exists(path))
+        {
+            Logging.WriteInfo($"C20: hr_bridge not found at {path} — start it manually");
+            return;
+        }
+
+        try
+        {
+            _bridgeProcess = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = path,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                }
+            };
+            _bridgeProcess.Start();
+            Logging.WriteInfo("C20: Launched hr_bridge process");
+        }
+        catch (Exception ex)
+        {
+            Logging.WriteInfo($"C20: Failed to launch hr_bridge: {ex.Message}");
+        }
+    }
+
     private async Task StartMonitoringAsync()
     {
         if (_isMonitoringStarted) return;
@@ -237,60 +259,38 @@ public partial class C20HeartRateModule : ObservableObject, IModule
             _cts = new CancellationTokenSource();
             await _dispatcher.InvokeAsync(() => DeviceConnected = false);
 
-            _device = await BluetoothLEDevice.FromBluetoothAddressAsync(GetBleAddress());
-            if (_device == null)
+            LaunchBridge();
+
+            // Wait for bridge to start (up to 5 seconds)
+            for (var i = 0; i < 10; i++)
             {
-                Logging.WriteInfo("C20: Device not found. Make sure the watch is nearby and awake.");
+                try
+                {
+                    _tcpClient = new TcpClient();
+                    await _tcpClient.ConnectAsync("127.0.0.1", Settings.TcpPort);
+                    break;
+                }
+                catch
+                {
+                    await Task.Delay(500);
+                }
+            }
+
+            if (_tcpClient == null || !_tcpClient.Connected)
+            {
+                Logging.WriteInfo($"C20: Could not connect to hr_bridge on port {Settings.TcpPort}. Make sure it's running.");
                 _isMonitoringStarted = false;
                 return;
             }
 
-            var servicesResult = await _device.GetGattServicesAsync();
-            if (servicesResult.Status != GattCommunicationStatus.Success)
-            {
-                Logging.WriteInfo($"C20: Failed to get services: {servicesResult.Status}");
-                _isMonitoringStarted = false;
-                return;
-            }
-
-            var hrService = servicesResult.Services.FirstOrDefault(s => s.Uuid == HR_SERVICE_UUID);
-            if (hrService == null)
-            {
-                Logging.WriteInfo("C20: Heart rate service not found");
-                _isMonitoringStarted = false;
-                return;
-            }
-
-            var charsResult = await hrService.GetCharacteristicsAsync();
-            if (charsResult.Status != GattCommunicationStatus.Success)
-            {
-                Logging.WriteInfo($"C20: Failed to get characteristics: {charsResult.Status}");
-                _isMonitoringStarted = false;
-                return;
-            }
-
-            _hrCharacteristic = charsResult.Characteristics.FirstOrDefault(c => c.Uuid == HR_MEASUREMENT_UUID);
-            if (_hrCharacteristic == null)
-            {
-                Logging.WriteInfo("C20: HR measurement characteristic not found");
-                _isMonitoringStarted = false;
-                return;
-            }
-
-            _hrCharacteristic.ValueChanged += OnHRValueChanged;
-            var notifyResult = await _hrCharacteristic.WriteClientCharacteristicConfigurationDescriptorAsync(
-                GattClientCharacteristicConfigurationDescriptorValue.Notify);
-
-            if (notifyResult != GattCommunicationStatus.Success)
-            {
-                Logging.WriteInfo($"C20: Failed to subscribe to notifications: {notifyResult}");
-                _isMonitoringStarted = false;
-                return;
-            }
+            _tcpReader = new StreamReader(_tcpClient.GetStream());
 
             await _dispatcher.InvokeAsync(() => DeviceConnected = true);
-            Logging.WriteInfo("C20: Connected and subscribed to HR notifications!");
+            Logging.WriteInfo($"C20: Connected to hr_bridge on port {Settings.TcpPort}!");
             _dataTimer.Start();
+
+            // Read HR data continuously
+            _ = ReadTcpLoopAsync();
         }
         catch (Exception ex)
         {
@@ -299,39 +299,43 @@ public partial class C20HeartRateModule : ObservableObject, IModule
         }
     }
 
-    private void OnHRValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
+    private async Task ReadTcpLoopAsync()
     {
         try
         {
-            var reader = DataReader.FromBuffer(args.CharacteristicValue);
-            byte flags = reader.ReadByte();
-            int bpm;
-
-            if ((flags & 0x01) != 0)
+            while (_tcpClient?.Connected == true)
             {
-                ushort val = reader.ReadUInt16();
-                bpm = val;
-            }
-            else
-            {
-                bpm = reader.ReadByte();
-            }
+                var line = await _tcpReader.ReadLineAsync();
+                if (line == null) break;
 
-            if (bpm < 20 || bpm > 250) return;
+                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(line);
+                if (data == null) continue;
 
-            lock (_hrLock)
-            {
-                _latestHR = bpm;
-                _lastHRUpdate = DateTime.Now;
-                _heartRateHistory.Enqueue(bpm);
-                while (_heartRateHistory.Count > Settings.SmoothHeartRateTimeSpan)
-                    _heartRateHistory.Dequeue();
+                bool connected = (bool)data["connected"];
+                await _dispatcher.InvokeAsync(() => DeviceConnected = connected);
+
+                int bpm = Convert.ToInt32(data["bpm"]);
+                if (bpm > 0)
+                {
+                    lock (_hrLock)
+                    {
+                        _latestHR = bpm;
+                        _lastHRUpdate = DateTime.Now;
+                        _heartRateHistory.Enqueue(bpm);
+                        while (_heartRateHistory.Count > Settings.SmoothHeartRateTimeSpan)
+                            _heartRateHistory.Dequeue();
+                    }
+                }
             }
         }
         catch (Exception ex)
         {
-            Logging.WriteInfo($"C20: Error parsing HR: {ex.Message}");
+            Logging.WriteInfo($"C20: TCP read error: {ex.Message}");
         }
+
+        _dispatcher.Invoke(() => DeviceConnected = false);
+        Logging.WriteInfo("C20: Disconnected from hr_bridge");
+        _isMonitoringStarted = false;
     }
 
     private void ProcessData()
@@ -342,10 +346,9 @@ public partial class C20HeartRateModule : ObservableObject, IModule
             return;
         }
 
-        if (_device == null || _device.ConnectionStatus != BluetoothConnectionStatus.Connected)
+        if (_tcpClient == null || !_tcpClient.Connected)
         {
             _dispatcher.Invoke(() => DeviceConnected = false);
-            Logging.WriteInfo("C20: Device disconnected");
             _isMonitoringStarted = false;
             _ = StartMonitoringAsync();
             return;
@@ -355,18 +358,12 @@ public partial class C20HeartRateModule : ObservableObject, IModule
         {
             int hr;
             if (Settings.SmoothHeartRate && _heartRateHistory.Count > 0)
-            {
                 hr = (int)_heartRateHistory.Average();
-            }
             else
-            {
                 hr = _latestHR;
-            }
 
             if (hr > 0 && HeartRate != hr)
-            {
                 _dispatcher.Invoke(() => HeartRate = hr);
-            }
 
             if (_integrationSettings.IntgrC20HeartRate_OSC && hr > 0)
             {
@@ -378,7 +375,6 @@ public partial class C20HeartRateModule : ObservableObject, IModule
                 _oscSender.SendOscParam("/avatar/parameters/C20_HRPercent", hrPercent);
                 _oscSender.SendOscParam("/avatar/parameters/C20_FullHRPercent", fullHRPercent);
 
-                // Pulsoid-compatible parameter names (same as Pulsoid module sends)
                 _oscSender.SendOscParam("/avatar/parameters/isHRConnected", DeviceConnected);
                 _oscSender.SendOscParam("/avatar/parameters/HR", hr);
                 _oscSender.SendOscParam("/avatar/parameters/HRPercent", hrPercent);
@@ -402,18 +398,30 @@ public partial class C20HeartRateModule : ObservableObject, IModule
     {
         _dataTimer.Stop();
 
-        if (_hrCharacteristic != null)
+        if (_tcpReader != null)
         {
-            try { _hrCharacteristic.ValueChanged -= OnHRValueChanged; }
+            try { _tcpReader.Close(); }
             catch { }
-            _hrCharacteristic = null;
+            _tcpReader = null;
         }
 
-        if (_device != null)
+        if (_tcpClient != null)
         {
-            try { _device.Dispose(); }
+            try { _tcpClient.Close(); }
             catch { }
-            _device = null;
+            _tcpClient = null;
+        }
+
+        if (_bridgeProcess != null && !_bridgeProcess.HasExited)
+        {
+            try
+            {
+                _bridgeProcess.Kill();
+                _bridgeProcess.WaitForExit(3000);
+            }
+            catch { }
+            _bridgeProcess.Dispose();
+            _bridgeProcess = null;
         }
 
         _cts?.Cancel();
