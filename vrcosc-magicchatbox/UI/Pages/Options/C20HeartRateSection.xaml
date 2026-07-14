@@ -64,7 +64,7 @@
             Grid.Row="1"
             Height="Auto"
             Margin="34,10,0,0"
-            Visibility="{Binding AppSettings.Settings_C20HeartRate, Converter={StaticResource InverseBoolToHiddenConverter}, UpdateSourceTrigger=PropertyChanged}">
+            Visibility="{Binding AppSettings.Settings_C20HeartRate, Converter={StaticResource InverseBoolToHiddenConverter}}">
             <StackPanel>
                 <!-- hr_bridge connection -->
                 <Border Style="{StaticResource OptionCardStyle}" Width="500">
