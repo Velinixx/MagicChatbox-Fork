@@ -198,7 +198,7 @@
                             <Run Text="Device: " />
                             <Run
                                 FontWeight="Bold"
-                                Text="{Binding HasDevice }" />
+                                Text="{Binding HasDevice, Mode=OneWay}" />
                         </TextBlock>
                         <TextBlock
                             FontFamily="Albert Sans Thin"
@@ -208,7 +208,7 @@
                             <Run Text="Heart Rate: " />
                             <Run
                                 FontWeight="Bold"
-                                Text="{Binding HeartRate}" />
+                                Text="{Binding HeartRate, Mode=OneWay}" />
                         </TextBlock>
                     </StackPanel>
                 </Border>
