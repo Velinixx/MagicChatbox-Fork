@@ -277,40 +277,13 @@ jobs:
       id: determine_release_type
       shell: pwsh
       run: |
-        $isTagRelease = '${{ steps.resolve_release.outputs.is_tag_release }}' -eq 'true'
-
-        if (-not $isTagRelease) {
-          $isMasterRelease = $env:GITHUB_REF -eq 'refs/heads/master'
-        } else {
-          git fetch --no-tags origin master Pre-Master
-
-          $tagCommit = git rev-list -n 1 $env:RELEASE_TAG
-          if ([string]::IsNullOrWhiteSpace($tagCommit)) {
-            Write-Error "Unable to resolve commit for tag $env:RELEASE_TAG."
-            exit 1
-          }
-
-          $null = git merge-base --is-ancestor $tagCommit origin/master 2>$null
-          $isMasterRelease = $LASTEXITCODE -eq 0
-        }
-
+        $isMasterRelease = '${{ github.ref }}' -eq 'refs/heads/master'
         if ($isMasterRelease) {
           echo "PRE_RELEASE=false" | Out-File -Append -Encoding utf8 $Env:GITHUB_ENV
           echo "RELEASE_NAME=${{ steps.resolve_release.outputs.release_tag }}" | Out-File -Append -Encoding utf8 $Env:GITHUB_ENV
           "pre_release=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           "release_name=${{ steps.resolve_release.outputs.release_tag }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         } else {
-          if ($isTagRelease) {
-            $null = git merge-base --is-ancestor $tagCommit origin/Pre-Master 2>$null
-            $isPreMasterRelease = $LASTEXITCODE -eq 0
-          } else {
-            $isPreMasterRelease = $env:GITHUB_REF -eq 'refs/heads/Pre-Master'
-          }
-
-          if (-not $isPreMasterRelease) {
-            Write-Warning "Tagged commit is not contained in master or Pre-Master. Defaulting to pre-release."
-          }
-
           echo "PRE_RELEASE=true" | Out-File -Append -Encoding utf8 $Env:GITHUB_ENV
           echo "RELEASE_NAME=${{ steps.resolve_release.outputs.release_tag }} (pre-release)" | Out-File -Append -Encoding utf8 $Env:GITHUB_ENV
           "pre_release=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
