@@ -72,7 +72,7 @@
                         <TextBlock
                             FontFamily="Albert Sans Thin"
                             FontSize="15"
-                            Foreground="{StaticResource TextHeaderBrush}"
+                            Foreground="{StaticResource TextSectionHeaderBrush}"
                             Text="hr_bridge connection"
                             TextWrapping="Wrap" />
                         <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
@@ -126,7 +126,7 @@
                         <TextBlock
                             FontFamily="Albert Sans Thin"
                             FontSize="15"
-                            Foreground="{StaticResource TextHeaderBrush}"
+                            Foreground="{StaticResource TextSectionHeaderBrush}"
                             Text="Heart Rate Number"
                             TextWrapping="Wrap" />
                         <CheckBox
@@ -187,7 +187,7 @@
                         <TextBlock
                             FontFamily="Albert Sans Thin"
                             FontSize="15"
-                            Foreground="{StaticResource TextHeaderBrush}"
+                            Foreground="{StaticResource TextSectionHeaderBrush}"
                             Text="Status"
                             TextWrapping="Wrap" />
                         <TextBlock
