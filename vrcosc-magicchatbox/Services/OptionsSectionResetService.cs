@@ -282,6 +282,8 @@ public sealed class OptionsSectionResetService : IOptionsSectionResetService
         nameof(AppSettings.OscMessageSuffix),
         nameof(AppSettings.SeperateWithENTERS),
         nameof(AppSettings.CountOculusSystemAsVR),
+        nameof(AppSettings.StartWithSteamVr),
+        nameof(AppSettings.QuitWithSteamVr),
         nameof(AppSettings.Topmost),
         nameof(AppSettings.CheckUpdateOnStartup),
         nameof(AppSettings.AppOpacity),

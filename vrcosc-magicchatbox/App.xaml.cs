@@ -62,6 +62,8 @@ namespace vrcosc_magicchatbox
         private const int MaxHandledDispatcherExceptionsInWindow = 3;
         private readonly System.Collections.Generic.Queue<DateTime> _handledDispatcherExceptionTimes = new();
 
+        public const string SteamVrLaunchArgument = "-steamvr";
+
         public static MainWindow mainWindow;
 
         protected override async void OnStartup(StartupEventArgs e)
@@ -69,6 +71,8 @@ namespace vrcosc_magicchatbox
             base.OnStartup(e);
             _startupStopwatch.Start();
             LogStartupPhase($"Process started. PID={Environment.ProcessId}, Args='{string.Join(" ", e.Args ?? Array.Empty<string>())}'.");
+
+            bool launchedBySteamVr = WasLaunchedBySteamVr(e.Args);
 
             if (!TryGetProfileNumberFromArgs(e.Args, out int startupProfileNumber, out string? invalidProfileNumber))
             {
@@ -83,6 +87,16 @@ namespace vrcosc_magicchatbox
 
             if (!ShouldSkipSingleInstanceGuard(e.Args) && !TryAcquireSingleInstance(startupProfileNumber))
             {
+                // SteamVR launches its startup apps without checking whether they are already
+                // there. Pulling a window to the front while someone is putting a headset on is
+                // the last thing they want, so this launch simply stands down.
+                if (launchedBySteamVr)
+                {
+                    LogStartupPhase("SteamVR started a copy that was already running. Leaving the running one alone.");
+                    Shutdown();
+                    return;
+                }
+
                 // Launching it again is how someone asks for the window back, not a mistake to be
                 // told off for. Wake the copy that already exists and leave quietly.
                 LogStartupPhase($"Second instance detected for profile {startupProfileNumber}. Waking the running one and exiting.");
@@ -238,6 +252,8 @@ namespace vrcosc_magicchatbox
                                     loadingWindow.UpdateProgress("Rolling back and clearing the slate. Fresh start!", 50);
                                     await Task.Run(() => updater.ClearBackUp());
                                     break;
+                                case SteamVrLaunchArgument:
+                                    break;
                                 default:
                                     loadingWindow.CloseFromAnyThread();
                                     LogStartupPhase($"Invalid command line argument '{arg}'.");
@@ -332,7 +348,9 @@ namespace vrcosc_magicchatbox
 
                 Services.GetRequiredService<ITrayIconService>().Initialize(mainWindow);
 
-                if (vm.AppSettingsInstance.StartInBackground)
+                // Being started by SteamVR means a headset is going on, not that someone wants a
+                // window. This never writes the preference back; it only applies to this launch.
+                if (vm.AppSettingsInstance.StartInBackground || launchedBySteamVr)
                 {
                     mainWindow.AbandonHiddenStart();
                     mainWindow.HideStartupOverlay(animate: false);
@@ -396,6 +414,8 @@ namespace vrcosc_magicchatbox
                 Logging.WriteInfo("[Startup] Starting background scan loop...");
                 mainWindow.StartBackgroundProcessing();
                 Logging.WriteInfo("[Startup] Background processing started.");
+
+                Services.GetRequiredService<Services.Vr.ISteamVrAutoStartService>().Start();
 
                 if (vm.AppSettingsInstance.CheckUpdateOnStartup && consentSvc.IsApproved(PrivacyHook.InternetAccess))
                 {
@@ -794,6 +814,30 @@ namespace vrcosc_magicchatbox
                 return true;
             }
         }
+
+        public void ShutdownFromSteamVr()
+        {
+            try
+            {
+                // Takes the same route as Exit in the tray menu, so "keep running when you close
+                // the window" cannot quietly turn this into a hide.
+                if (mainWindow is not null)
+                {
+                    mainWindow._isTrayClosing = true;
+                    mainWindow.Close();
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logging.WriteException(ex, MSGBox: false);
+            }
+
+            Shutdown();
+        }
+
+        private static bool WasLaunchedBySteamVr(string[]? args)
+            => args != null && args.Any(arg => arg.Equals(SteamVrLaunchArgument, StringComparison.OrdinalIgnoreCase));
 
         private static bool ShouldSkipSingleInstanceGuard(string[]? args)
         {

@@ -379,6 +379,24 @@
                     </StackPanel>
                 </Border>
 
+                <!--  SteamVR  -->
+                <Border Style="{StaticResource OptionCardStyle}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource OptionSubsectionHeaderStyle}" Text="SteamVR" />
+                        <CheckBox x:Name="StartWithSteamVr_checkbox" IsChecked="{Binding AppSettings.StartWithSteamVr, Mode=TwoWay}">
+                            Start MagicChatbox when SteamVR starts
+                        </CheckBox>
+                        <TextBlock Style="{StaticResource OptionHelpTextStyle}" Text="MagicChatbox adds itself to SteamVR's startup apps and opens straight to the tray, so it is already sending to the chatbox by the time you are in. SteamVR keeps its own switch for this under Settings → Startup / Shutdown." />
+                        <CheckBox
+                            x:Name="QuitWithSteamVr_checkbox"
+                            IsChecked="{Binding AppSettings.QuitWithSteamVr, Mode=TwoWay}"
+                            IsEnabled="{Binding AppSettings.StartWithSteamVr}">
+                            Close it again when SteamVR closes
+                        </CheckBox>
+                        <TextBlock Style="{StaticResource OptionHelpTextStyle}" Text="Leave this off to keep MagicChatbox running at the desk after you take the headset off." />
+                    </StackPanel>
+                </Border>
+
                 <!--  Everything else  -->
                 <Border Style="{StaticResource OptionCardStyle}">
                     <StackPanel>

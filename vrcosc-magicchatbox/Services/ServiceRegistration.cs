@@ -64,6 +64,16 @@ public static class ServiceRegistration
             utcNow: null,
             isUiThread: () => System.Windows.Application.Current?.Dispatcher?.CheckAccess() == true));
 
+        services.AddSingleton<Services.Vr.ISteamVrApplications>(sp => new Services.Vr.SteamVrApplications(
+            sp.GetRequiredService<Services.Vr.IOpenVrSessionService>()));
+        services.AddSingleton<Services.Vr.ISteamVrAutoStartService>(sp => new Services.Vr.SteamVrAutoStartService(
+            sp.GetRequiredService<Services.Vr.ISteamVrApplications>(),
+            sp.GetRequiredService<ISettingsProvider<AppSettings>>(),
+            sp.GetRequiredService<IAppState>(),
+            sp.GetRequiredService<IProcessPresenceService>(),
+            () => System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
+                () => (System.Windows.Application.Current as App)?.ShutdownFromSteamVr())));
+
         services.AddSingleton<IPrivacyConsentService, PrivacyConsentService>();
         services.AddSingleton<PrivacySectionViewModel>();
 

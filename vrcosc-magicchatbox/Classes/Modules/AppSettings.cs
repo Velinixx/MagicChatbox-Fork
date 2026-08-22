@@ -26,6 +26,10 @@ public partial class AppSettings : VersionedSettings
     [ObservableProperty] private string _oscMessageSuffix = string.Empty;
     [ObservableProperty] private bool _seperateWithENTERS = true;
 
+    [ObservableProperty] private bool _startWithSteamVr = false;
+    [ObservableProperty] private bool _quitWithSteamVr = false;
+    [ObservableProperty] private string _steamVrManifestPath = string.Empty;
+
     [ObservableProperty] private bool _countOculusSystemAsVR = true;
     [ObservableProperty] private bool _topmost = false;
     [ObservableProperty] private bool _joinedAlphaChannel = false;
