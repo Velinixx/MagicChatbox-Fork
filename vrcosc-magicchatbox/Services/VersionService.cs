@@ -30,6 +30,8 @@ public sealed class VersionService : IVersionService
     private readonly SemaphoreSlim _updateLock = new(1, 1);
     private readonly ConcurrentDictionary<string, CachedResponse> _cache = new();
 
+    private DateTimeOffset _quotaResetsAtUtc = DateTimeOffset.MinValue;
+
     public VersionService(
         IHttpClientFactory httpClientFactory,
         AppUpdateState updateState,
@@ -93,14 +95,30 @@ public sealed class VersionService : IVersionService
 
         try
         {
+            // Waiting out a limit that is already known, rather than spending a request to be
+            // told about it again: GitHub answers an exhausted quota with an error, not the data.
+            if (DateTimeOffset.UtcNow < _quotaResetsAtUtc)
+            {
+                ShowQuotaPause();
+                return;
+            }
+
             var client = _httpClientFactory.CreateClient("GitHub");
 
-            bool isWithinRateLimit = await CheckRateLimitAsync();
-            if (!isWithinRateLimit && !string.IsNullOrEmpty(OpenAISettings.DefaultApiStream))
+            RateLimitStatus limit = await ReadRateLimitAsync();
+            if (limit.Exhausted)
             {
-                string token = EncryptionMethods.DecryptString(OpenAISettings.DefaultApiStream);
-                if (token != null)
-                    client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", $"Token {token}");
+                _quotaResetsAtUtc = limit.ResetsAtUtc;
+
+                if (!TryAttachFallbackToken(client))
+                {
+                    Logging.WriteInfo(
+                        "GitHub's hourly allowance for this address is used up, so the update check is " +
+                        $"held until {_quotaResetsAtUtc.ToLocalTime():HH:mm}. This is shared by everything " +
+                        "on the connection, not just MagicChatbox.");
+                    ShowQuotaPause();
+                    return;
+                }
             }
 
             UpdateOffer stable = UpdateOffer.Absent(UpdateChannel.Stable);
@@ -157,6 +175,19 @@ public sealed class VersionService : IVersionService
 
             var updater = new UpdateApp(_updateState, _httpClientFactory, _dispatcher);
             _updateState.RollBackUpdateAvailable = updater.CheckIfBackupExists();
+        }
+        catch (QuotaExhaustedException ex)
+        {
+            // The pre-flight reading can be a little behind, and the quota is shared by everything
+            // on this address, so an exhausted response can still arrive after a clean check.
+            _quotaResetsAtUtc = ex.ResetsAtUtc > DateTimeOffset.UtcNow
+                ? ex.ResetsAtUtc
+                : DateTimeOffset.UtcNow.AddMinutes(10);
+
+            Logging.WriteInfo(
+                $"GitHub is not answering update checks from this address until {_quotaResetsAtUtc.ToLocalTime():HH:mm}.");
+            ShowQuotaPause();
+            return;
         }
         catch (Exception ex)
         {
@@ -307,6 +338,15 @@ public sealed class VersionService : IVersionService
         if (response.StatusCode == HttpStatusCode.NotModified && cached.Body != null)
             return cached.Body;
 
+        if (response.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests
+            && ReadHeader(response, "x-ratelimit-remaining") == 0)
+        {
+            long reset = ReadHeader(response, "x-ratelimit-reset") ?? 0;
+            throw new QuotaExhaustedException(reset > 0
+                ? DateTimeOffset.FromUnixTimeSeconds(reset)
+                : DateTimeOffset.UtcNow.AddMinutes(10));
+        }
+
         response.EnsureSuccessStatusCode();
 
         string body = await response.Content.ReadAsStringAsync();
@@ -318,7 +358,11 @@ public sealed class VersionService : IVersionService
         return body;
     }
 
-    private async Task<bool> CheckRateLimitAsync()
+    /// <summary>
+    /// Asks how much of the hourly allowance is left. This endpoint is not itself counted
+    /// against that allowance, so it costs nothing to ask before spending a request.
+    /// </summary>
+    private async Task<RateLimitStatus> ReadRateLimitAsync()
     {
         try
         {
@@ -326,14 +370,62 @@ public sealed class VersionService : IVersionService
             using var response = await client.GetAsync(Core.Constants.GitHubRateLimitUrl);
             var data = JsonConvert.DeserializeObject<JObject>(await response.Content.ReadAsStringAsync());
 
-            var remaining = (int)data["resources"]["core"]["remaining"];
-            return remaining > 0;
+            JToken core = data?["resources"]?["core"];
+            if (core == null)
+                return RateLimitStatus.Unknown;
+
+            int remaining = core.Value<int?>("remaining") ?? 1;
+            long reset = core.Value<long?>("reset") ?? 0;
+
+            return new RateLimitStatus(
+                remaining <= 0,
+                reset > 0 ? DateTimeOffset.FromUnixTimeSeconds(reset) : DateTimeOffset.UtcNow.AddMinutes(10));
         }
         catch (Exception ex)
         {
-            Logging.WriteException(ex, MSGBox: false);
-            return false;
+            // Not knowing is not the same as being out. The request itself is still worth trying,
+            // and it reports its own exhaustion accurately if that turns out to be the case.
+            Logging.WriteInfo($"Could not read the GitHub allowance: {ex.Message}");
+            return RateLimitStatus.Unknown;
         }
+    }
+
+    private static bool TryAttachFallbackToken(HttpClient client)
+    {
+        if (string.IsNullOrEmpty(OpenAISettings.DefaultApiStream))
+            return false;
+
+        string token = EncryptionMethods.DecryptString(OpenAISettings.DefaultApiStream);
+        if (string.IsNullOrEmpty(token))
+            return false;
+
+        client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", $"Token {token}");
+        return true;
+    }
+
+    private void ShowQuotaPause()
+    {
+        // Not an error and not a version claim: the last thing that was learned about updates
+        // still stands, so nothing about the update state is disturbed here.
+        _updateState.VersionTxt = $"Update check paused until {_quotaResetsAtUtc.ToLocalTime():HH:mm}";
+        _updateState.VersionTxtColor = "#FBB644";
+        _updateState.VersionTxtUnderLine = false;
+    }
+
+    private static long? ReadHeader(HttpResponseMessage response, string name)
+        => response.Headers.TryGetValues(name, out var values)
+           && long.TryParse(values.FirstOrDefault(), out long value)
+            ? value
+            : null;
+
+    private readonly record struct RateLimitStatus(bool Exhausted, DateTimeOffset ResetsAtUtc)
+    {
+        public static readonly RateLimitStatus Unknown = new(false, DateTimeOffset.MinValue);
+    }
+
+    private sealed class QuotaExhaustedException(DateTimeOffset resetsAtUtc) : Exception("GitHub request allowance exhausted.")
+    {
+        public DateTimeOffset ResetsAtUtc { get; } = resetsAtUtc;
     }
 
     private readonly record struct CachedResponse(string ETag, string Body);
