@@ -411,28 +411,77 @@
                             IsChecked="{Binding TtsSettings.ToggleVoiceWithV, Mode=TwoWay}">
                             Mute and unmute VRChat with the V key
                         </CheckBox>
+                    </StackPanel>
+                </Border>
+
+                <!--  Updates  -->
+                <Border Style="{StaticResource OptionCardStyle}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource OptionSubsectionHeaderStyle}" Text="Updates" />
+
                         <CheckBox
                             x:Name="CheckUpdateOnStartup"
-                            Margin="0,6,0,0"
                             IsChecked="{Binding AppSettings.CheckUpdateOnStartup, Mode=TwoWay}">
                             Look for a newer version at startup (recommended)
                         </CheckBox>
-                        <CheckBox
-                            x:Name="ToggleJoinedApha"
-                            Margin="0,6,0,4"
-                            Content="Include test versions"
-                            Foreground="{Binding UpdateState.VersionTxtColor}"
-                            IsChecked="{Binding AppSettings.JoinedAlphaChannel, Mode=TwoWay}"
-                            RenderOptions.BitmapScalingMode="NearestNeighbor">
-                            <CheckBox.Effect>
-                                <DropShadowEffect
-                                    BlurRadius="15"
-                                    Opacity="0.7"
-                                    ShadowDepth="0"
-                                    Color="{Binding UpdateState.VersionTxtColor}" />
-                            </CheckBox.Effect>
-                        </CheckBox>
-                        <TextBlock Style="{StaticResource OptionHelpTextStyle}" Text="Test versions get new features first and can be rough. You can go back to the last version you had from the button below." />
+                        <TextBlock Style="{StaticResource OptionHelpTextStyle}" Text="MagicChatbox also checks every so often while it is running." />
+
+                        <TextBlock
+                            Margin="2,12,0,5"
+                            Style="{StaticResource OptionFieldLabelStyle}"
+                            Text="Stable releases" />
+                        <Border Style="{StaticResource SegmentedChoiceContainerStyle}">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton
+                                    Content="Ignore"
+                                    GroupName="StableUpdateMode"
+                                    IsChecked="{Binding AppSettings.StableUpdateMode, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Off, Mode=TwoWay}"
+                                    Style="{StaticResource SegmentedChoiceStyle}" />
+                                <RadioButton
+                                    Content="Tell me"
+                                    GroupName="StableUpdateMode"
+                                    IsChecked="{Binding AppSettings.StableUpdateMode, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Notify, Mode=TwoWay}"
+                                    Style="{StaticResource SegmentedChoiceStyle}" />
+                                <RadioButton
+                                    Content="Install for me"
+                                    GroupName="StableUpdateMode"
+                                    IsChecked="{Binding AppSettings.StableUpdateMode, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Auto, Mode=TwoWay}"
+                                    Style="{StaticResource SegmentedChoiceStyle}" />
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock
+                            Margin="2,14,0,5"
+                            Style="{StaticResource OptionFieldLabelStyle}"
+                            Text="Test versions" />
+                        <Border Style="{StaticResource SegmentedChoiceContainerStyle}">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton
+                                    Content="Ignore"
+                                    GroupName="PreReleaseUpdateMode"
+                                    IsChecked="{Binding AppSettings.PreReleaseUpdateMode, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Off, Mode=TwoWay}"
+                                    Style="{StaticResource SegmentedChoiceStyle}" />
+                                <RadioButton
+                                    Content="Tell me"
+                                    GroupName="PreReleaseUpdateMode"
+                                    IsChecked="{Binding AppSettings.PreReleaseUpdateMode, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Notify, Mode=TwoWay}"
+                                    Style="{StaticResource SegmentedChoiceStyle}" />
+                                <RadioButton
+                                    Content="Install for me"
+                                    GroupName="PreReleaseUpdateMode"
+                                    IsChecked="{Binding AppSettings.PreReleaseUpdateMode, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Auto, Mode=TwoWay}"
+                                    Style="{StaticResource SegmentedChoiceStyle}" />
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock
+                            Margin="2,10,20,0"
+                            Style="{StaticResource OptionHelpTextStyle}"
+                            Text="Each row decides what happens to updates from that channel, whichever version you are on now. Test versions get new features first and can be rough." />
+                        <TextBlock
+                            Margin="2,0,20,4"
+                            Style="{StaticResource OptionHelpTextStyle}"
+                            Text="&quot;Install for me&quot; downloads in the background and swaps the files the next time you start MagicChatbox, so nothing interrupts you mid-session. You can always go back with the button below." />
                     </StackPanel>
                 </Border>
 

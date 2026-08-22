@@ -1310,6 +1310,67 @@
         <Setter Property="Orientation" Value="Horizontal" />
     </Style>
 
+    <!--
+        A row of mutually exclusive choices where a dropdown would hide the alternatives. Every
+        option stays on screen, so the cost of each one is readable without opening anything.
+        Put the buttons in a bordered container and give them a shared GroupName.
+    -->
+    <Style x:Key="SegmentedChoiceContainerStyle" TargetType="{x:Type Border}">
+        <Setter Property="Background" Value="{StaticResource SurfaceDarkBrush}" />
+        <Setter Property="BorderBrush" Value="#5B4A86" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="5" />
+        <Setter Property="Padding" Value="2" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style x:Key="SegmentedChoiceStyle" TargetType="{x:Type RadioButton}">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FontFamily" Value="{StaticResource FontPrimary}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCompact}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+        <Setter Property="Padding" Value="12,5" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type RadioButton}">
+                    <Border
+                        x:Name="segment"
+                        Background="Transparent"
+                        CornerRadius="3">
+                        <ContentPresenter
+                            Margin="{TemplateBinding Padding}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            RecognizesAccessKey="True"
+                            TextOptions.TextRenderingMode="ClearType" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="segment" Property="Background" Value="#3A2F5C" />
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="segment" Property="Background" Value="{StaticResource AccentLightPurpleBrush}" />
+                            <Setter Property="Foreground" Value="#FF241243" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="segment" Property="BorderBrush" Value="{StaticResource TextPrimaryBrush}" />
+                            <Setter TargetName="segment" Property="BorderThickness" Value="1" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                            <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 
     <ControlTemplate x:Key="DarkSliderThumb" TargetType="{x:Type Thumb}">
         <Ellipse

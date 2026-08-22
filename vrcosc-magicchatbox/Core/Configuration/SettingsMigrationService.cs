@@ -401,6 +401,8 @@ public static class SettingsMigrationService
         new("System",        "CountOculusSystemAsVR",          "CountOculusSystemAsVR"),
         new("Window",        "Topmost",                        "Topmost"),
         new("Update",        "JoinedAlphaChannel",             "JoinedAlphaChannel"),
+        new("Update",        "StableUpdateMode",               "StableUpdateMode"),
+        new("Update",        "PreReleaseUpdateMode",           "PreReleaseUpdateMode"),
         new("Update",        "CheckUpdateOnStartup",           "CheckUpdateOnStartup"),
         new("DEV",           "BlankEgg",                       "BlankEgg"),
         new("StatusSetting", "SwitchStatusInterval",           "SwitchStatusInterval"),

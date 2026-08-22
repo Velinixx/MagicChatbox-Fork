@@ -499,11 +499,18 @@ public static class ServiceRegistration
             sp.GetRequiredService<IUiDispatcher>()));
         services.AddSingleton<IStatusListService, StatusListService>();
         services.AddSingleton<IComponentStatsPersistenceService, ComponentStatsPersistenceService>();
+        services.AddSingleton<IAutoUpdateService>(sp => new AutoUpdateService(
+            sp.GetRequiredService<AppUpdateState>(),
+            sp.GetRequiredService<IHttpClientFactory>(),
+            sp.GetRequiredService<IUiDispatcher>(),
+            sp.GetRequiredService<ISettingsProvider<AppSettings>>(),
+            new Lazy<IToastService>(() => sp.GetRequiredService<IToastService>())));
         services.AddSingleton<IVersionService>(sp => new VersionService(
             sp.GetRequiredService<IHttpClientFactory>(),
             sp.GetRequiredService<AppUpdateState>(),
             sp.GetRequiredService<ISettingsProvider<AppSettings>>(),
-            sp.GetRequiredService<IUiDispatcher>()));
+            sp.GetRequiredService<IUiDispatcher>(),
+            sp.GetRequiredService<IAutoUpdateService>()));
         services.AddSingleton<IAudioService>(sp => new AudioService(
             sp.GetRequiredService<TtsAudioDisplayState>(),
             sp.GetRequiredService<ISettingsProvider<TtsSettings>>(),

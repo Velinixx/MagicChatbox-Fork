@@ -15,6 +15,8 @@ public partial class AppUpdateState : ObservableObject
     [ObservableProperty] private string _updateStatustxt = string.Empty;
     [ObservableProperty] private string _updateURL = string.Empty;
     [ObservableProperty] private string _updateDigest = string.Empty;
+    [ObservableProperty] private string _updateVersion = string.Empty;
+    [ObservableProperty] private UpdateChannel? _pendingUpdateChannel;
     [ObservableProperty] private string _latestReleaseURL = string.Empty;
     [ObservableProperty] private string _latestReleaseDigest = string.Empty;
     [ObservableProperty] private string _preReleaseURL = string.Empty;

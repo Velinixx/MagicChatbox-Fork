@@ -1,9 +1,11 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Concurrent;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using vrcosc_magicchatbox.Classes.DataAndSecurity;
@@ -11,28 +13,35 @@ using vrcosc_magicchatbox.Classes.Modules;
 using vrcosc_magicchatbox.Core.Configuration;
 using vrcosc_magicchatbox.Core.Services;
 using vrcosc_magicchatbox.Core.State;
+using vrcosc_magicchatbox.Core.Updates;
 using vrcosc_magicchatbox.ViewModels.State;
 
 namespace vrcosc_magicchatbox.Services;
 
 public sealed class VersionService : IVersionService
 {
+    private const int ReleasePageSize = 15;
+
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly AppUpdateState _updateState;
     private readonly ISettingsProvider<AppSettings> _appSettingsProvider;
     private readonly IUiDispatcher _dispatcher;
+    private readonly IAutoUpdateService _autoUpdate;
     private readonly SemaphoreSlim _updateLock = new(1, 1);
+    private readonly ConcurrentDictionary<string, CachedResponse> _cache = new();
 
     public VersionService(
         IHttpClientFactory httpClientFactory,
         AppUpdateState updateState,
         ISettingsProvider<AppSettings> appSettingsProvider,
-        IUiDispatcher dispatcher)
+        IUiDispatcher dispatcher,
+        IAutoUpdateService autoUpdate)
     {
         _httpClientFactory = httpClientFactory;
         _updateState = updateState;
         _appSettingsProvider = appSettingsProvider;
         _dispatcher = dispatcher;
+        _autoUpdate = autoUpdate;
     }
 
     public string GetApplicationVersion()
@@ -80,14 +89,13 @@ public sealed class VersionService : IVersionService
 
     private async Task CheckForUpdateAsync()
     {
+        UpdateVerdict verdict = null;
+
         try
         {
-            const string urlLatest = Core.Constants.GitHubReleasesLatestUrl;
-            const string urlPreRelease = Core.Constants.GitHubReleasesUrl;
-
-            bool isWithinRateLimit = await CheckRateLimitAsync();
             var client = _httpClientFactory.CreateClient("GitHub");
 
+            bool isWithinRateLimit = await CheckRateLimitAsync();
             if (!isWithinRateLimit && !string.IsNullOrEmpty(OpenAISettings.DefaultApiStream))
             {
                 string token = EncryptionMethods.DecryptString(OpenAISettings.DefaultApiStream);
@@ -95,50 +103,57 @@ public sealed class VersionService : IVersionService
                     client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", $"Token {token}");
             }
 
-            using var responseLatest = await client.GetAsync(urlLatest);
-            var jsonLatest = await responseLatest.Content.ReadAsStringAsync();
-            JObject releaseLatest = JObject.Parse(jsonLatest);
-            string latestVersion = releaseLatest.Value<string>("tag_name");
+            UpdateOffer stable = UpdateOffer.Absent(UpdateChannel.Stable);
+            UpdateOffer preRelease = UpdateOffer.Absent(UpdateChannel.PreRelease);
 
-            _updateState.LatestReleaseVersion = new ViewModels.Models.Version(
-                Regex.Replace(latestVersion, "[^0-9.]", string.Empty));
+            string listUrl = $"{Core.Constants.GitHubReleasesUrl}?per_page={ReleasePageSize}";
+            string listJson = await GetWithCacheAsync(client, listUrl);
 
-            JArray assetsLatest = releaseLatest.Value<JArray>("assets");
-            if (assetsLatest != null && assetsLatest.Count > 0)
+            if (!string.IsNullOrWhiteSpace(listJson))
             {
-                _updateState.LatestReleaseURL = assetsLatest[0].Value<string>("browser_download_url");
-                _updateState.LatestReleaseDigest = assetsLatest[0].Value<string>("digest") ?? string.Empty;
-            }
+                JArray releases = JArray.Parse(listJson);
 
-            using var responsePreRelease = await client.GetAsync(urlPreRelease);
-            var jsonPreRelease = await responsePreRelease.Content.ReadAsStringAsync();
-            JArray releases = JArray.Parse(jsonPreRelease);
-
-            foreach (var release in releases)
-            {
-                if (release.Value<bool>("prerelease"))
+                foreach (var release in releases)
                 {
-                    string preReleaseVersion = release.Value<string>("tag_name");
-                    JArray assetsPreRelease = release.Value<JArray>("assets");
-                    string preReleaseDownloadUrl = null;
-                    string preReleaseDigest = null;
+                    if (release.Value<bool>("draft"))
+                        continue;
 
-                    if (assetsPreRelease != null && assetsPreRelease.Count > 0)
-                    {
-                        preReleaseDownloadUrl = assetsPreRelease[0].Value<string>("browser_download_url");
-                        preReleaseDigest = assetsPreRelease[0].Value<string>("digest");
-                    }
+                    bool isPreRelease = release.Value<bool>("prerelease");
 
-                    if (_appSettingsProvider.Value.JoinedAlphaChannel && !string.IsNullOrEmpty(preReleaseVersion))
-                    {
-                        _updateState.PreReleaseVersion = new ViewModels.Models.Version(
-                            Regex.Replace(preReleaseVersion, "[^0-9.]", string.Empty));
-                        _updateState.PreReleaseURL = preReleaseDownloadUrl ?? string.Empty;
-                        _updateState.PreReleaseDigest = preReleaseDigest ?? string.Empty;
-                    }
-                    break;
+                    if (isPreRelease && preRelease.IsPresent)
+                        continue;
+                    if (!isPreRelease && stable.IsPresent)
+                        continue;
+
+                    UpdateOffer offer = ReadOffer(
+                        release,
+                        isPreRelease ? UpdateChannel.PreRelease : UpdateChannel.Stable);
+
+                    if (!offer.IsPresent)
+                        continue;
+
+                    if (isPreRelease)
+                        preRelease = offer;
+                    else
+                        stable = offer;
+
+                    if (stable.IsPresent && preRelease.IsPresent)
+                        break;
                 }
             }
+
+            // A repository can publish more pre-releases than fit on one page, which would leave
+            // the stable channel looking empty. The dedicated endpoint always resolves it.
+            if (!stable.IsPresent)
+            {
+                string latestJson = await GetWithCacheAsync(client, Core.Constants.GitHubReleasesLatestUrl);
+                if (!string.IsNullOrWhiteSpace(latestJson))
+                    stable = ReadOffer(JObject.Parse(latestJson), UpdateChannel.Stable);
+            }
+
+            PublishOffers(stable, preRelease);
+
+            verdict = Decide(stable, preRelease);
 
             var updater = new UpdateApp(_updateState, _httpClientFactory, _dispatcher);
             _updateState.RollBackUpdateAvailable = updater.CheckIfBackupExists();
@@ -146,14 +161,161 @@ public sealed class VersionService : IVersionService
         catch (Exception ex)
         {
             Logging.WriteException(ex, MSGBox: false);
+
+            // A check that never completed says nothing about which version is current, so the
+            // failure stands rather than being painted over with a reassuring "up-to-date".
+            _updateState.CanUpdate = false;
+            _updateState.CanUpdateLabel = false;
+            _updateState.PendingUpdateChannel = null;
             _updateState.VersionTxt = "Can't check updates";
             _updateState.VersionTxtColor = "#F36734";
             _updateState.VersionTxtUnderLine = false;
+            return;
         }
-        finally
+
+        ApplyVerdict(verdict);
+
+        if (verdict.Action == UpdateAction.AutoInstall)
+            await _autoUpdate.ConsiderAsync(verdict);
+    }
+
+    private UpdateVerdict Decide(UpdateOffer stable, UpdateOffer preRelease)
+    {
+        AppSettings settings = _appSettingsProvider.Value;
+
+        return UpdateDecision.Decide(
+            _updateState.AppVersion?.VersionNumber,
+            stable,
+            preRelease,
+            settings.StableUpdateMode,
+            settings.PreReleaseUpdateMode,
+            _autoUpdate.BlockedVersions);
+    }
+
+    private static UpdateOffer ReadOffer(JToken release, UpdateChannel channel)
+    {
+        string tag = release.Value<string>("tag_name");
+        if (string.IsNullOrWhiteSpace(tag))
+            return UpdateOffer.Absent(channel);
+
+        JArray assets = release.Value<JArray>("assets");
+        JToken asset = assets?.FirstOrDefault(candidate =>
+                           (candidate.Value<string>("name") ?? string.Empty)
+                           .EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                       ?? assets?.FirstOrDefault();
+
+        if (asset == null)
+            return UpdateOffer.Absent(channel);
+
+        return new UpdateOffer(
+            channel,
+            ReleaseVersion.Normalize(tag),
+            asset.Value<string>("browser_download_url") ?? string.Empty,
+            asset.Value<string>("digest") ?? string.Empty);
+    }
+
+    private void PublishOffers(UpdateOffer stable, UpdateOffer preRelease)
+    {
+        _updateState.LatestReleaseVersion = stable.IsPresent
+            ? new ViewModels.Models.Version(stable.Version)
+            : null;
+        _updateState.LatestReleaseURL = stable.Url;
+        _updateState.LatestReleaseDigest = stable.Digest;
+
+        // Cleared every pass: a pre-release that has been superseded or switched off must not
+        // leave a live download URL behind for a later decision to pick up.
+        bool exposePreRelease = _appSettingsProvider.Value.PreReleaseUpdateMode != UpdateChannelMode.Off
+                                && preRelease.IsPresent;
+
+        _updateState.PreReleaseVersion = exposePreRelease
+            ? new ViewModels.Models.Version(preRelease.Version)
+            : null;
+        _updateState.PreReleaseURL = exposePreRelease ? preRelease.Url : string.Empty;
+        _updateState.PreReleaseDigest = exposePreRelease ? preRelease.Digest : string.Empty;
+    }
+
+    private void ApplyVerdict(UpdateVerdict verdict)
+    {
+        try
         {
-            CompareVersions();
+            _updateState.PendingUpdateChannel = verdict.Standing == UpdateStanding.UpdateAvailable
+                ? verdict.Channel
+                : null;
+            _updateState.UpdateURL = verdict.Url;
+            _updateState.UpdateDigest = verdict.Digest;
+            _updateState.UpdateVersion = verdict.Version;
+
+            switch (verdict.Standing)
+            {
+                case UpdateStanding.UpdateAvailable when verdict.Channel == UpdateChannel.PreRelease:
+                    _updateState.VersionTxt = "Try new pre-release";
+                    _updateState.VersionTxtColor = "#2FD9FF";
+                    _updateState.VersionTxtUnderLine = true;
+                    _updateState.CanUpdate = true;
+                    _updateState.CanUpdateLabel = false;
+                    break;
+
+                case UpdateStanding.UpdateAvailable:
+                    _updateState.VersionTxt = "Update now";
+                    _updateState.VersionTxtColor = "#FF8AFF04";
+                    _updateState.VersionTxtUnderLine = true;
+                    _updateState.CanUpdate = true;
+                    _updateState.CanUpdateLabel = true;
+                    break;
+
+                case UpdateStanding.AheadOfReleases:
+                    _updateState.VersionTxt = "✨ Supporter version ✨";
+                    _updateState.VersionTxtColor = "#FFD700";
+                    _updateState.VersionTxtUnderLine = false;
+                    _updateState.CanUpdate = false;
+                    _updateState.CanUpdateLabel = false;
+                    break;
+
+                case UpdateStanding.UpToDate when verdict.Channel == UpdateChannel.PreRelease:
+                    _updateState.VersionTxt = "Up-to-date (pre-release)";
+                    _updateState.VersionTxtColor = "#75D5FE";
+                    _updateState.VersionTxtUnderLine = false;
+                    _updateState.CanUpdate = false;
+                    _updateState.CanUpdateLabel = false;
+                    break;
+
+                default:
+                    _updateState.VersionTxt = "You are up-to-date";
+                    _updateState.VersionTxtColor = "#FF92CC90";
+                    _updateState.VersionTxtUnderLine = false;
+                    _updateState.CanUpdate = false;
+                    _updateState.CanUpdateLabel = false;
+                    break;
+            }
         }
+        catch (Exception ex)
+        {
+            Logging.WriteException(ex, MSGBox: false);
+        }
+    }
+
+    private async Task<string> GetWithCacheAsync(HttpClient client, string url)
+    {
+        _cache.TryGetValue(url, out CachedResponse cached);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        if (!string.IsNullOrEmpty(cached.ETag))
+            request.Headers.TryAddWithoutValidation("If-None-Match", cached.ETag);
+
+        using var response = await client.SendAsync(request);
+
+        if (response.StatusCode == HttpStatusCode.NotModified && cached.Body != null)
+            return cached.Body;
+
+        response.EnsureSuccessStatusCode();
+
+        string body = await response.Content.ReadAsStringAsync();
+        string etag = response.Headers.ETag?.ToString();
+
+        if (!string.IsNullOrEmpty(etag))
+            _cache[url] = new CachedResponse(etag, body);
+
+        return body;
     }
 
     private async Task<bool> CheckRateLimitAsync()
@@ -174,91 +336,5 @@ public sealed class VersionService : IVersionService
         }
     }
 
-    private void CompareVersions()
-    {
-        try
-        {
-            int compareWithLatest = CompareVersionNumbers(
-                _updateState.AppVersion?.VersionNumber,
-                _updateState.LatestReleaseVersion?.VersionNumber);
-
-            if (compareWithLatest < 0)
-            {
-                _updateState.VersionTxt = "Update now";
-                _updateState.VersionTxtColor = "#FF8AFF04";
-                _updateState.VersionTxtUnderLine = true;
-                _updateState.CanUpdate = true;
-                _updateState.CanUpdateLabel = true;
-                _updateState.UpdateURL = _updateState.LatestReleaseURL;
-                _updateState.UpdateDigest = _updateState.LatestReleaseDigest;
-                return;
-            }
-
-            if (_appSettingsProvider.Value.JoinedAlphaChannel && _updateState.PreReleaseVersion != null)
-            {
-                int compareWithPre = CompareVersionNumbers(
-                    _updateState.AppVersion?.VersionNumber,
-                    _updateState.PreReleaseVersion.VersionNumber);
-
-                if (compareWithPre < 0)
-                {
-                    _updateState.VersionTxt = "Try new pre-release";
-                    _updateState.VersionTxtUnderLine = true;
-                    _updateState.VersionTxtColor = "#2FD9FF";
-                    _updateState.CanUpdate = true;
-                    _updateState.CanUpdateLabel = false;
-                    _updateState.UpdateURL = _updateState.PreReleaseURL;
-                    _updateState.UpdateDigest = _updateState.PreReleaseDigest;
-                    return;
-                }
-                else if (compareWithPre == 0)
-                {
-                    _updateState.VersionTxt = "Up-to-date (pre-release)";
-                    _updateState.VersionTxtUnderLine = false;
-                    _updateState.VersionTxtColor = "#75D5FE";
-                    _updateState.CanUpdateLabel = false;
-                    _updateState.CanUpdate = false;
-                    return;
-                }
-            }
-
-            if (compareWithLatest > 0)
-            {
-                _updateState.VersionTxt = "✨ Supporter version ✨";
-                _updateState.VersionTxtColor = "#FFD700";
-                _updateState.VersionTxtUnderLine = false;
-                _updateState.CanUpdate = false;
-                _updateState.CanUpdateLabel = false;
-                return;
-            }
-
-            _updateState.VersionTxt = "You are up-to-date";
-            _updateState.VersionTxtUnderLine = false;
-            _updateState.VersionTxtColor = "#FF92CC90";
-            _updateState.CanUpdateLabel = false;
-            _updateState.CanUpdate = false;
-        }
-        catch (Exception ex)
-        {
-            Logging.WriteException(ex, MSGBox: false);
-        }
-    }
-
-    private static int CompareVersionNumbers(string a, string b)
-    {
-        if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b))
-            return string.Compare(a ?? "", b ?? "", StringComparison.Ordinal);
-
-        var partsA = a.Split('.');
-        var partsB = b.Split('.');
-        int maxLen = Math.Max(partsA.Length, partsB.Length);
-
-        for (int i = 0; i < maxLen; i++)
-        {
-            int segA = i < partsA.Length && int.TryParse(partsA[i], out int va) ? va : 0;
-            int segB = i < partsB.Length && int.TryParse(partsB[i], out int vb) ? vb : 0;
-            if (segA != segB) return segA.CompareTo(segB);
-        }
-        return 0;
-    }
+    private readonly record struct CachedResponse(string ETag, string Body);
 }

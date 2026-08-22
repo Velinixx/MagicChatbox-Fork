@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using vrcosc_magicchatbox.Core.Configuration;
+using vrcosc_magicchatbox.Core.Updates;
 
 namespace vrcosc_magicchatbox.Classes.Modules;
 
@@ -32,8 +33,21 @@ public partial class AppSettings : VersionedSettings
 
     [ObservableProperty] private bool _countOculusSystemAsVR = true;
     [ObservableProperty] private bool _topmost = false;
-    [ObservableProperty] private bool _joinedAlphaChannel = false;
+    [ObservableProperty] private UpdateChannelMode _stableUpdateMode = UpdateChannelMode.Notify;
+    [ObservableProperty] private UpdateChannelMode _preReleaseUpdateMode = UpdateChannelMode.Off;
     [ObservableProperty] private bool _checkUpdateOnStartup = true;
+
+    [JsonProperty("JoinedAlphaChannel", NullValueHandling = NullValueHandling.Ignore)]
+    public bool? LegacyJoinedAlphaChannel
+    {
+        get => null;
+        set
+        {
+            if (value == true)
+                PreReleaseUpdateMode = UpdateChannelMode.Notify;
+        }
+    }
+
     [ObservableProperty] private bool _startInBackground = false;
     [ObservableProperty] private bool _minimizeToTray = false;
     [ObservableProperty] private bool _closeToTray = false;

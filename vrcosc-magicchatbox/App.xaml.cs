@@ -264,6 +264,14 @@ namespace vrcosc_magicchatbox
                     }
                 }
 
+                if (Services.GetRequiredService<IAutoUpdateService>()
+                        .PrepareForStartup(launchedBySteamVr) == StartupUpdateOutcome.HandingOff)
+                {
+                    LogStartupPhase("Handing off to the updater; this process is on its way out.");
+                    loadingWindow.CloseFromAnyThread();
+                    return;
+                }
+
                 bool tosJustAccepted = false;
                 _interactiveStartupPhase = true;
                 {
@@ -414,6 +422,9 @@ namespace vrcosc_magicchatbox
                 Logging.WriteInfo("[Startup] Starting background scan loop...");
                 mainWindow.StartBackgroundProcessing();
                 Logging.WriteInfo("[Startup] Background processing started.");
+
+                Services.GetRequiredService<IAutoUpdateService>().ReportStartupHealthy();
+                LogStartupPhase("Startup reached a working state.");
 
                 Services.GetRequiredService<Services.Vr.ISteamVrAutoStartService>().Start();
 

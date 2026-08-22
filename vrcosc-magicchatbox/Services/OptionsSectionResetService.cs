@@ -286,6 +286,8 @@ public sealed class OptionsSectionResetService : IOptionsSectionResetService
         nameof(AppSettings.QuitWithSteamVr),
         nameof(AppSettings.Topmost),
         nameof(AppSettings.CheckUpdateOnStartup),
+        nameof(AppSettings.StableUpdateMode),
+        nameof(AppSettings.PreReleaseUpdateMode),
         nameof(AppSettings.AppOpacity),
         nameof(AppSettings.AppIsEnabled),
         nameof(AppSettings.StartInBackground),
