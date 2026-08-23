@@ -152,6 +152,13 @@ namespace vrcosc_magicchatbox
                 _loggingReady = true;
                 LogStartupPhase("Logging configured.");
 
+                if (Core.Diagnostics.PerfProbe.IsEnabled)
+                {
+                    Core.Diagnostics.PerfProbe.ReportDirectory =
+                        Services.GetRequiredService<IEnvironmentService>().LogPath;
+                    Core.Diagnostics.BindingErrorProbe.Start();
+                    Logging.WriteInfo("[Perf] Instrumentation enabled (-perf). Ctrl+Shift+F12 dumps a snapshot.");
+                }
 
                 Logging.Initialize(
                     Services.GetRequiredService<AppUpdateState>(),
@@ -254,6 +261,8 @@ namespace vrcosc_magicchatbox
                                     await Task.Run(() => updater.ClearBackUp());
                                     break;
                                 case SteamVrLaunchArgument:
+                                    break;
+                                case Core.Diagnostics.PerfProbe.EnableArgument:
                                     break;
                                 default:
                                     loadingWindow.CloseFromAnyThread();

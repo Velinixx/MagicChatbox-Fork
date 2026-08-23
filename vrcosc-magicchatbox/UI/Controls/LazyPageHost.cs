@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using vrcosc_magicchatbox.Classes.DataAndSecurity;
 using System.Windows;
 using System.Windows.Controls;
@@ -93,10 +94,22 @@ namespace vrcosc_magicchatbox.UI.Controls
             if (Child != null || PageTemplate == null)
                 return;
 
+            long startTicks = Stopwatch.GetTimestamp();
+            long startAllocated = GC.GetAllocatedBytesForCurrentThread();
+
             Child = PageTemplate.LoadContent() as UIElement;
 
-            if (Child != null)
-                Logging.WriteInfo($"Page built: {Child.GetType().Name}");
+            if (Child == null)
+                return;
+
+            string name = Child.GetType().Name;
+
+            Core.Diagnostics.PerfProbe.Record(
+                $"nav.build.{name}",
+                Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds,
+                GC.GetAllocatedBytesForCurrentThread() - startAllocated);
+
+            Logging.WriteInfo($"Page built: {name}");
         }
 
         public void Release()
@@ -111,7 +124,12 @@ namespace vrcosc_magicchatbox.UI.Controls
             ReleaseFocus();
 
             string released = Child.GetType().Name;
+
+            long startTicks = Stopwatch.GetTimestamp();
             Child = null;
+            Core.Diagnostics.PerfProbe.Record(
+                $"nav.release.{released}",
+                Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds);
 
             Logging.WriteInfo($"Page released: {released}");
         }
