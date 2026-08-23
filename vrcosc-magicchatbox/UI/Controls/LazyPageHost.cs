@@ -104,6 +104,9 @@ namespace vrcosc_magicchatbox.UI.Controls
 
             string name = Child.GetType().Name;
 
+            // Coercion catches values set from here on; this settles what the page was built with.
+            ReducedVisuals.Refresh(Child);
+
             Core.Diagnostics.PerfProbe.Record(
                 $"nav.build.{name}",
                 Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds,
@@ -166,6 +169,9 @@ namespace vrcosc_magicchatbox.UI.Controls
 
         private void PlayEnterTransition()
         {
+            if (ReducedVisuals.IsEnabled)
+                return;
+
             var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
 
             BeginAnimation(OpacityProperty, new DoubleAnimation(0.0, 1.0, EnterDuration)

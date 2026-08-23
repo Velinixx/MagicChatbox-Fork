@@ -135,6 +135,12 @@ public partial class AppSettings : VersionedSettings
     [ObservableProperty] private double _appOpacity = 0.98;
     [ObservableProperty] private bool _appIsEnabled = true;
 
+    /// <summary>Drops shadows, blurs, partial opacity and page transitions, to give the GPU back.</summary>
+    [ObservableProperty] private bool _reducedVisuals = false;
+
+    /// <summary>Turns the above on by itself while VR is running, which is when the GPU is contended.</summary>
+    [ObservableProperty] private bool _reducedVisualsInVr = true;
+
     [ObservableProperty]
     [property: Newtonsoft.Json.JsonIgnore]
     [property: System.Text.Json.Serialization.JsonIgnore]

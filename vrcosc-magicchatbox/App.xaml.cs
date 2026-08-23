@@ -69,6 +69,10 @@ namespace vrcosc_magicchatbox
         protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            // Before any element exists: property metadata cannot be overridden once a type is in use.
+            UI.Controls.ReducedVisuals.Install();
+
             _startupStopwatch.Start();
             LogStartupPhase($"Process started. PID={Environment.ProcessId}, Args='{string.Join(" ", e.Args ?? Array.Empty<string>())}'.");
 

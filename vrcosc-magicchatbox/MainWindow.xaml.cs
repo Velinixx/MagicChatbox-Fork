@@ -570,6 +570,7 @@ namespace vrcosc_magicchatbox
             Core.Diagnostics.UiPerfMonitor.Start(this);
             Core.Diagnostics.PerfProbe.Mark("MainWindow first content rendered");
             StartPerfAutoDump();
+            ApplyReducedVisuals();
 
             if (_revealWanted)
                 Reveal();
@@ -604,6 +605,40 @@ namespace vrcosc_magicchatbox
 
             Logging.WriteInfo(report);
             DumpPerfSnapshot("nav-benchmark");
+        }
+
+        private void ApplyReducedVisuals()
+        {
+            var settings = _appSettingsProvider?.Value;
+            if (settings == null)
+                return;
+
+            bool forced = Environment.GetEnvironmentVariable("MAGICCHATBOX_REDUCED_VISUALS") == "1";
+            var appState = App.Services.GetRequiredService<IAppState>();
+
+            void Resolve() => UI.Controls.ReducedVisuals.IsEnabled =
+                forced
+                || settings.ReducedVisuals
+                || (settings.ReducedVisualsInVr && appState.IsVRRunning);
+
+            settings.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is nameof(AppSettings.ReducedVisuals) or nameof(AppSettings.ReducedVisualsInVr))
+                    Resolve();
+            };
+
+            if (appState is INotifyPropertyChanged observableState)
+            {
+                observableState.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == nameof(IAppState.IsVRRunning))
+                        Dispatcher.BeginInvoke(Resolve);
+                };
+            }
+
+            UI.Controls.ReducedVisuals.Changed += () => Dispatcher.BeginInvoke(() => UI.Controls.ReducedVisuals.Refresh(this));
+            Resolve();
+            UI.Controls.ReducedVisuals.Refresh(this);
         }
 
         private void StartPerfAutoDump()

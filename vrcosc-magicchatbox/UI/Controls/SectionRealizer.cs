@@ -180,7 +180,9 @@ public sealed class SectionRealizer
         slot.HeightMeasured += RememberHeight;
         content.SizeChanged += slot.OnContentSizeChanged;
 
-        if (animate)
+        ReducedVisuals.Refresh(content);
+
+        if (animate && !ReducedVisuals.IsEnabled)
             PlayEntrance(content);
     }
 
