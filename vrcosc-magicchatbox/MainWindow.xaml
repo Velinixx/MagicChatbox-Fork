@@ -1052,6 +1052,10 @@
                         </StackPanel>
 
 
+                        <!--
+                            Keeping the window in front lives on the Options page; this spot is worth
+                            more to the switch you want before putting a headset on.
+                        -->
                         <StackPanel
                             Margin="0,8,0,2"
                             HorizontalAlignment="Right"
@@ -1061,12 +1065,13 @@
                                 FontFamily="/Fonts/#Albert Sans"
                                 FontSize="12"
                                 Foreground="{StaticResource TextSecondaryBrush}"
-                                Text="TopMost" />
+                                Text="Auto start in VR" />
                             <CheckBox
                                 Margin="4,0,0,0"
                                 FontSize="12"
-                                IsChecked="{Binding AppSettingsInstance.Topmost, Mode=TwoWay}"
-                                Style="{DynamicResource SettingsCheckbox}" />
+                                IsChecked="{Binding AppSettingsInstance.StartWithSteamVr, Mode=TwoWay}"
+                                Style="{DynamicResource SettingsCheckbox}"
+                                ToolTip="Start MagicChatbox with SteamVR and open it straight to the tray." />
                         </StackPanel>
                         <StackPanel
                             Margin="0,2"
