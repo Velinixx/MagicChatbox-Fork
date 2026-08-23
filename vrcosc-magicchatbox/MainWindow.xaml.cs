@@ -628,6 +628,27 @@ namespace vrcosc_magicchatbox
             if (Environment.GetEnvironmentVariable("MAGICCHATBOX_PERF_NAVBENCH") == "1")
                 RunNavigationBenchmarkAsync();
 
+            if (Environment.GetEnvironmentVariable("MAGICCHATBOX_PERF_SCENARIO") == "1")
+                RunUiScenarioAsync();
+        }
+
+        private async void RunUiScenarioAsync()
+        {
+            if (DataContext is not ViewModel viewModel)
+                return;
+
+            await Task.Delay(TimeSpan.FromSeconds(10));
+
+            var integrations = App.Services
+                .GetRequiredService<Core.Configuration.ISettingsProvider<IntegrationSettings>>().Value;
+
+            var runner = new Core.Diagnostics.UiScenarioRunner(
+                this,
+                integrations,
+                index => viewModel.SelectedMenuIndex = index);
+
+            Logging.WriteInfo(await runner.RunAsync());
+            DumpPerfSnapshot("ui-scenario");
         }
 
         private async void RunNavigationBenchmarkAsync()
