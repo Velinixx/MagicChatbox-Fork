@@ -274,6 +274,8 @@ public class UpdateApp
 
     private void FailProgress(string detail) => OnUi(() => Progress.Fail(detail));
 
+    private void CompleteProgress(string detail) => OnUi(() => Progress.Complete(detail));
+
     private static string GetWorkspaceRoot() =>
         Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -1051,7 +1053,12 @@ public class UpdateApp
                     DateTimeOffset.UtcNow));
 
                 SetStep(UpdateStepKind.Install, UpdateStepStatus.Pending, "Waiting for the next restart");
-                ReportIndeterminate("Ready to install the next time MagicChatbox starts");
+
+                // Complete, not just a progress report: the card can only be dismissed once it has
+                // finished or failed, and staging in the background is finished as far as this session
+                // goes. Reporting progress and returning left the card on screen with a dead close
+                // button for the rest of the session.
+                CompleteProgress("Ready to install the next time MagicChatbox starts");
                 Logging.WriteInfo($"Staged {TargetVersion()} for install on the next start.");
                 return;
             }
@@ -1068,7 +1075,11 @@ public class UpdateApp
             {
                 _updateState.CanUpdate = true;
                 _updateState.CanUpdateLabel = true;
-                Logging.WriteException(ex, MSGBox: true);
+
+                // An update nobody asked for must not interrupt with a modal error. The progress card
+                // already shows the failure, and the caller toasts. A hand-started update keeps the
+                // dialog, because someone is waiting on the answer.
+                Logging.WriteException(ex, MSGBox: !unattended);
             });
         }
         finally

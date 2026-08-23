@@ -445,7 +445,7 @@
                             IsChecked="{Binding AppSettings.CheckUpdateOnStartup, Mode=TwoWay}">
                             Look for a newer version at startup (recommended)
                         </CheckBox>
-                        <TextBlock Style="{StaticResource OptionHelpTextStyle}" Text="MagicChatbox also checks every so often while it is running." />
+                        <TextBlock Style="{StaticResource OptionHelpTextStyle}" Text="Otherwise it only looks when you press the button on the version card." />
 
                         <TextBlock
                             Margin="2,12,0,5"
@@ -506,62 +506,32 @@
                     </StackPanel>
                 </Border>
 
-                <Button
-                    x:Name="Rollback"
-                    Width="auto"
-                    Height="30"
-                    Margin="0,5,0,5"
-                    Padding="5"
-                    HorizontalAlignment="Left"
-                    Command="{Binding RollbackCommand}"
-                    Opacity="0.7"
-                    Style="{StaticResource UpdatedGreenButtonStyle}"
-                    Visibility="{Binding UpdateState.RollBackUpdateAvailable, Converter={StaticResource InverseBoolToHiddenConverter}}">
-                    <Button.ContentTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <Image
-                                    Height="18"
-                                    Margin="0,0,4,0"
-                                    RenderOptions.BitmapScalingMode="HighQuality"
-                                    Source="/Img/Icons/downgrade.png" />
-                                <TextBlock
-                                    x:Name="RollBackVersion"
-                                    Margin="0,-2,5,0"
-                                    VerticalAlignment="Center"
-                                    FontSize="{StaticResource FontSizeBody}"
-                                    Text="{Binding UpdateState.RollBackVersion, Converter={StaticResource VersionDisplayConverter}, ConverterParameter='Go back to {0}', UpdateSourceTrigger=PropertyChanged}" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </Button.ContentTemplate>
-                </Button>
+                <!--
+                    Content, not ContentTemplate: a ContentTemplate takes its DataContext from the
+                    button's Content, which was never set, so the version binding below resolved against
+                    nothing and the button showed its icon with no text at all.
+                -->
+                <StackPanel Margin="0,5,0,15" Orientation="Horizontal">
+                    <Button
+                        x:Name="Rollback"
+                        Height="25"
+                        Margin="0,0,5,0"
+                        Padding="10,0"
+                        HorizontalAlignment="Left"
+                        Command="{Binding RollbackCommand}"
+                        Content="{Binding UpdateState.RollBackVersion, Converter={StaticResource VersionDisplayConverter}, ConverterParameter='Go back to {0}', UpdateSourceTrigger=PropertyChanged}"
+                        Style="{DynamicResource Status_Button_style}"
+                        Visibility="{Binding UpdateState.RollBackUpdateAvailable, Converter={StaticResource InverseBoolToHiddenConverter}}" />
 
-                <Button
-                    x:Name="UpdateByZipFile"
-                    Width="auto"
-                    Height="30"
-                    Margin="0,0,0,15"
-                    Padding="5"
-                    HorizontalAlignment="Left"
-                    Command="{Binding UpdateByZipCommand}"
-                    Opacity="0.7"
-                    Style="{StaticResource UpdatedGreenButtonStyle}">
-                    <Button.ContentTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <Image
-                                    Height="18"
-                                    Margin="0,0,4,0"
-                                    Source="/Img/Icons/Upload.png" />
-                                <TextBlock
-                                    Margin="0,-2,5,0"
-                                    VerticalAlignment="Center"
-                                    FontSize="{StaticResource FontSizeBody}"
-                                    Text="Install from a ZIP file" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </Button.ContentTemplate>
-                </Button>
+                    <Button
+                        x:Name="UpdateByZipFile"
+                        Height="25"
+                        Padding="10,0"
+                        HorizontalAlignment="Left"
+                        Command="{Binding UpdateByZipCommand}"
+                        Content="Install from a ZIP file"
+                        Style="{DynamicResource Status_Button_style}" />
+                </StackPanel>
 
                 <StackPanel Orientation="Horizontal">
                     <Button
