@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="vrcosc_magicchatbox.UI.Pages.Options.AppOptionsSection"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -88,6 +88,9 @@
                         </CheckBox>
                         <CheckBox x:Name="OpenTrayWithAltX_checkbox" IsChecked="{Binding AppSettings.OpenTrayWithAltX, Mode=TwoWay}">
                             Open the tray menu with Alt+X
+                        </CheckBox>
+                        <CheckBox x:Name="HiddenIntegrationWarning_checkbox" IsChecked="{Binding AppSettings.ShowHiddenIntegrationWarning, Mode=TwoWay}">
+                            Warn me when something is on but not shown in the mode I am in
                         </CheckBox>
                         <TextBlock
                             Margin="2,6,20,4"

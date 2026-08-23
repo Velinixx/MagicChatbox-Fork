@@ -56,6 +56,7 @@ public partial class AppSettings : VersionedSettings
     [ObservableProperty] private bool _enableTrayNotifications = true;
     [ObservableProperty] private bool _showTrayRunningReminder = true;
     [ObservableProperty] private bool _openTrayWithAltX = true;
+    [ObservableProperty] private bool _showHiddenIntegrationWarning = true;
 
     [JsonProperty("OpenTrayWithAltQ", NullValueHandling = NullValueHandling.Ignore)]
     public bool? LegacyOpenTrayShortcut

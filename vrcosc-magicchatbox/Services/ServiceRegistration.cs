@@ -205,6 +205,7 @@ public static class ServiceRegistration
             new Lazy<IModuleHost>(() => sp.GetRequiredService<IModuleHost>()),
             new Lazy<OSCController>(() => sp.GetRequiredService<OSCController>()),
             sp.GetRequiredService<ISettingsProvider<IntegrationSettings>>(),
+            sp.GetRequiredService<ISettingsProvider<AppSettings>>(),
             sp.GetRequiredService<ISettingsProvider<MediaLinkSettings>>(),
             sp.GetRequiredService<ISettingsProvider<SpotifySettings>>(),
             sp.GetRequiredService<ISettingsProvider<WeatherSettings>>(),
