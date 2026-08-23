@@ -30,6 +30,10 @@ public sealed partial class TikTokLiveModule : ObservableObject, IModule
     [GeneratedRegex("\"followerCount\"\\s*:\\s*(?<value>\\d+)", RegexOptions.CultureInvariant)]
     private static partial Regex FollowerCountRegex();
 
+    // TikTok's own status code for "user does not exist", carried in the page it still serves as 200.
+    [GeneratedRegex("\"statusCode\"\\s*:\\s*10221", RegexOptions.CultureInvariant)]
+    private static partial Regex ProfileNotFoundRegex();
+
     [GeneratedRegex("\"nickname\"\\s*:\\s*\"(?<value>(?:\\\\.|[^\"])*)\"", RegexOptions.CultureInvariant)]
     private static partial Regex NicknameRegex();
 
@@ -733,10 +737,26 @@ public sealed partial class TikTokLiveModule : ObservableObject, IModule
         if (!TryParseProfileSnapshot(html, profileUserName, out TikTokProfileSnapshot profile))
         {
             Logging.WriteInfo($"TikTok profile parser could not find followerCount for @{profileUserName}.");
-            throw new InvalidOperationException("Follower count was not available on the public profile page.");
+            throw new InvalidOperationException(DescribeMissingProfile(html, profileUserName));
         }
 
         return profile;
+    }
+
+    /// <summary>
+    /// TikTok answers 200 for a missing account and for a bot check alike, so the page itself is the
+    /// only thing that says which happened - and telling them apart is the difference between "fix
+    /// your spelling" and "wait and try again".
+    /// </summary>
+    private static string DescribeMissingProfile(string html, string profileUserName)
+    {
+        if (ProfileNotFoundRegex().IsMatch(html))
+            return $"No TikTok account called @{profileUserName}. Check the spelling.";
+
+        if (!html.Contains("__UNIVERSAL_DATA_FOR_REHYDRATION__", StringComparison.Ordinal))
+            return "TikTok returned a check page instead of the profile. It is rate-limiting this network; try again in a few minutes.";
+
+        return "TikTok did not include a follower count on this profile.";
     }
 
     private void WireClientEvents(TikTokLiveClient client, int sessionId, TaskCompletionSource<bool> disconnectedTcs)
