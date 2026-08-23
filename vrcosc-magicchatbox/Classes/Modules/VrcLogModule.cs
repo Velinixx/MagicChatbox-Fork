@@ -64,17 +64,29 @@ public partial class VrcLogModule : ObservableObject, IModule
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "Low",
         "VRChat", "VRChat");
 
-    private static readonly Regex JoiningRegex = new(
-        @"Joining (wrld_[a-f0-9\-]+:\d+(?:~\w+\([^)]*\))*)",
-        RegexOptions.Compiled);
+    [GeneratedRegex(@"Joining (wrld_[a-f0-9\-]+:\d+(?:~\w+\([^)]*\))*)")]
+    private static partial Regex JoiningRegex();
 
-    private static readonly Regex EmptySeparatorRegex = new(@"\s*\|\s*\|\s*", RegexOptions.Compiled);
-    private static readonly Regex TrailingSeparatorRegex = new(@"(\s*\|\s*)+$", RegexOptions.Compiled);
-    private static readonly Regex LeadingSeparatorRegex = new(@"^\s*\|\s*", RegexOptions.Compiled);
-    private static readonly Regex RepeatedSpaceRegex = new(@"\s{2,}", RegexOptions.Compiled);
-    private static readonly Regex DownloadSizeRegex = new(@"@ (\d+) MB", RegexOptions.Compiled);
-    private static readonly Regex DownloadSpeedRegex = new(@"speed: (\d+) bytes per second", RegexOptions.Compiled);
-    private static readonly Regex InstanceRegionRegex = new(@"~region\((\w+)\)", RegexOptions.Compiled);
+    [GeneratedRegex(@"\s*\|\s*\|\s*")]
+    private static partial Regex EmptySeparatorRegex();
+
+    [GeneratedRegex(@"(\s*\|\s*)+$")]
+    private static partial Regex TrailingSeparatorRegex();
+
+    [GeneratedRegex(@"^\s*\|\s*")]
+    private static partial Regex LeadingSeparatorRegex();
+
+    [GeneratedRegex(@"\s{2,}")]
+    private static partial Regex RepeatedSpaceRegex();
+
+    [GeneratedRegex(@"@ (\d+) MB")]
+    private static partial Regex DownloadSizeRegex();
+
+    [GeneratedRegex(@"speed: (\d+) bytes per second")]
+    private static partial Regex DownloadSpeedRegex();
+
+    [GeneratedRegex(@"~region\((\w+)\)")]
+    private static partial Regex InstanceRegionRegex();
 
     private const int ActivePollIntervalMs = 500;
     private const int IdlePollIntervalMs = 5000;
@@ -414,10 +426,10 @@ public partial class VrcLogModule : ObservableObject, IModule
 
         text = text.Replace("{owner}", VrcLogText.Name(InstanceOwnerName));
 
-        text = EmptySeparatorRegex.Replace(text, " | ");
-        text = TrailingSeparatorRegex.Replace(text, "");
-        text = LeadingSeparatorRegex.Replace(text, "");
-        text = RepeatedSpaceRegex.Replace(text, " ");
+        text = EmptySeparatorRegex().Replace(text, " | ");
+        text = TrailingSeparatorRegex().Replace(text, "");
+        text = LeadingSeparatorRegex().Replace(text, "");
+        text = RepeatedSpaceRegex().Replace(text, " ");
         text = text.Trim();
 
         text = text.Replace("\\n", "\n").Replace("/n", "\n");
@@ -910,7 +922,7 @@ public partial class VrcLogModule : ObservableObject, IModule
 
         if (line.Contains("[AssetBundleDownloadManager] Starting download of World"))
         {
-            var sizeMatch = DownloadSizeRegex.Match(line);
+            var sizeMatch = DownloadSizeRegex().Match(line);
             if (sizeMatch.Success)
             {
                 _downloadSizeMB = int.Parse(sizeMatch.Groups[1].Value, CultureInfo.InvariantCulture);
@@ -929,7 +941,7 @@ public partial class VrcLogModule : ObservableObject, IModule
 
         if (line.Contains("[AssetBundleDownloadManager] Average download speed:"))
         {
-            var speedMatch = DownloadSpeedRegex.Match(line);
+            var speedMatch = DownloadSpeedRegex().Match(line);
             if (speedMatch.Success && _downloadSizeMB > 0)
             {
                 _downloadSpeedMBps = Math.Round(
@@ -969,7 +981,7 @@ public partial class VrcLogModule : ObservableObject, IModule
 
     private void ParseJoiningLine(string line)
     {
-        var keyMatch = JoiningRegex.Match(line);
+        var keyMatch = JoiningRegex().Match(line);
         if (keyMatch.Success)
             _currentInstanceKey = keyMatch.Groups[1].Value;
 
@@ -1003,7 +1015,7 @@ public partial class VrcLogModule : ObservableObject, IModule
         }
 
         string region = string.Empty;
-        var regionMatch = InstanceRegionRegex.Match(line);
+        var regionMatch = InstanceRegionRegex().Match(line);
         if (regionMatch.Success)
             region = regionMatch.Groups[1].Value;
 

@@ -15,7 +15,7 @@ using vrcosc_magicchatbox.Services.Hardware;
 
 namespace vrcosc_magicchatbox.Services;
 
-public sealed class HardwareMonitorService : IHardwareMonitorService
+public sealed partial class HardwareMonitorService : IHardwareMonitorService
 {
     private readonly object _lock = new();
     private readonly LhmGpuSensorProvider _vendorGpu = new();
@@ -64,12 +64,15 @@ public sealed class HardwareMonitorService : IHardwareMonitorService
         "VideoProcessing",
         "Copy",
     };
-    private static readonly Regex GpuCounterLuidRegex = new(
+    [GeneratedRegex(
         @"luid_0x(?<high>[0-9a-f]+)_0x(?<low>[0-9a-f]+)",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-    private static readonly Regex GpuEngineCounterRegex = new(
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex GpuCounterLuidRegex();
+
+    [GeneratedRegex(
         @"luid_0x(?<high>[0-9a-f]+)_0x(?<low>[0-9a-f]+)_phys_(?<phys>\d+)_eng_(?<engine>\d+)_engtype_(?<type>.+)$",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex GpuEngineCounterRegex();
     private static readonly Guid DxgiFactory1Guid = new("770aae78-f26f-4dba-a829-253c83d1b387");
     private const int DxgiErrorNotFound = unchecked((int)0x887A0002);
     private const uint DxgiAdapterFlagSoftware = 2;
@@ -977,7 +980,7 @@ public sealed class HardwareMonitorService : IHardwareMonitorService
 
     private static bool TryParseGpuEngineCounter(string instanceName, out string? luidToken, out string engineKey, out string engineType)
     {
-        var match = GpuEngineCounterRegex.Match(instanceName);
+        var match = GpuEngineCounterRegex().Match(instanceName);
         if (!match.Success)
         {
             luidToken = null;
@@ -994,7 +997,7 @@ public sealed class HardwareMonitorService : IHardwareMonitorService
 
     private static string? TryParseLuidToken(string instanceName)
     {
-        var match = GpuCounterLuidRegex.Match(instanceName);
+        var match = GpuCounterLuidRegex().Match(instanceName);
         return match.Success
             ? NormalizeLuidToken(match.Groups["high"].Value, match.Groups["low"].Value)
             : null;

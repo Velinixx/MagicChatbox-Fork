@@ -3,18 +3,17 @@ using System.Text.RegularExpressions;
 
 namespace vrcosc_magicchatbox.Core.Updates;
 
-public static class ReleaseVersion
+public static partial class ReleaseVersion
 {
-    private static readonly Regex LeadingNumber = new(
-        @"^\s*v?(\d+(?:\.\d+)*)",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    [GeneratedRegex(@"^\s*v?(\d+(?:\.\d+)*)", RegexOptions.CultureInvariant)]
+    private static partial Regex LeadingNumber();
 
     public static string Normalize(string? tag)
     {
         if (string.IsNullOrWhiteSpace(tag))
             return string.Empty;
 
-        Match match = LeadingNumber.Match(tag);
+        Match match = LeadingNumber().Match(tag);
         return match.Success ? match.Groups[1].Value : string.Empty;
     }
 
@@ -43,7 +42,7 @@ public static class ReleaseVersion
         if (string.IsNullOrWhiteSpace(tag))
             return (string.Empty, string.Empty);
 
-        Match match = LeadingNumber.Match(tag);
+        Match match = LeadingNumber().Match(tag);
         if (!match.Success)
             return (string.Empty, string.Empty);
 
