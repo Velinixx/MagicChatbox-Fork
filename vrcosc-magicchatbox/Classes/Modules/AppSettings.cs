@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using vrcosc_magicchatbox.Core.Configuration;
 using vrcosc_magicchatbox.Core.Updates;
@@ -79,6 +80,24 @@ public partial class AppSettings : VersionedSettings
     [ObservableProperty] private bool _statusRoundCorners = true;
 
     [ObservableProperty] private int _currentMenuItem = 0;
+
+    [ObservableProperty] private Dictionary<string, double> _pageScrollOffsets = new();
+
+    /// <summary>
+    /// Last measured height of each Options section, so an unrealized section's placeholder can reserve
+    /// the right space. Without it the scrollbar and any restored offset are wrong until everything is built.
+    /// </summary>
+    [ObservableProperty] private Dictionary<string, double> _optionsSectionHeights = new();
+
+    /// <summary>
+    /// Arms the auto-save for the two scroll dictionaries. They are mutated in place, which raises no
+    /// PropertyChanged of its own, so without this they would only reach disk on a clean shutdown.
+    /// </summary>
+    public void MarkScrollStateChanged()
+    {
+        OnPropertyChanged(nameof(PageScrollOffsets));
+        OnPropertyChanged(nameof(OptionsSectionHeights));
+    }
 
     [ObservableProperty] private bool _settings_Status = false;
     [ObservableProperty] private bool _settings_OpenAI = false;
