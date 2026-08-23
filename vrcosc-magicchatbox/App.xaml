@@ -17,6 +17,7 @@
 
             <DropShadowEffect
                 x:Key="TextBlockShadowEffect"
+                po:Freeze="True"
                 BlurRadius="10"
                 Opacity="1"
                 RenderingBias="Performance"
