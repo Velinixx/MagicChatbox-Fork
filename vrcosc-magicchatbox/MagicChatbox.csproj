@@ -33,13 +33,17 @@
 		<Prefer32Bit>false</Prefer32Bit>
 		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 		<AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
-		<!-- Precompiles the app's own IL so the startup path is not JIT-compiled on every launch. -->
-		<PublishReadyToRun>true</PublishReadyToRun>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<!-- Nothing in the app consumes INotifyPropertyChanging, so the toolkit default only adds an
-		     event raise and an EventArgs allocation to every one of ~990 observable property setters. -->
+		<PublishReadyToRun>true</PublishReadyToRun>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PublishReadyToRunExclude Include="SixLabors.ImageSharp.dll" />
+	</ItemGroup>
+
+	<PropertyGroup>		
 		<MvvmToolkitEnableINotifyPropertyChangingSupport>false</MvvmToolkitEnableINotifyPropertyChangingSupport>
 	</PropertyGroup>
 
@@ -247,7 +251,6 @@
     <PackageReference Include="TwitchLib.Api" Version="3.10.2" />
     <PackageReference Include="OpenVR.NET" Version="0.8.5" />
 	<PackageReference Include="SixLabors.ImageSharp" Version="2.1.13" />
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.11" />
     <PackageReference Include="TikTokLive_Sharp" Version="1.2.3" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.11" />
