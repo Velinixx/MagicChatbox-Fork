@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using vrcosc_magicchatbox.Core.Configuration;
@@ -12,6 +13,7 @@ public partial class AppSettings : VersionedSettings
     public const double OscTickIntervalDefaultSeconds = 1.0;
     public const double OscTickIntervalMinSeconds = 0.7;
     public const double OscTickIntervalMaxSeconds = 10.0;
+    public const int OscTickIntervalDecimals = 1;
 
     [ObservableProperty] private double _scanningInterval = OscTickIntervalDefaultSeconds;
     [ObservableProperty] private int _scanPauseTimeout = 15;
@@ -163,9 +165,23 @@ public partial class AppSettings : VersionedSettings
         }
 
         if (value < OscTickIntervalMinSeconds)
+        {
             ScanningInterval = OscTickIntervalMinSeconds;
-        else if (value > OscTickIntervalMaxSeconds)
+            return;
+        }
+
+        if (value > OscTickIntervalMaxSeconds)
+        {
             ScanningInterval = OscTickIntervalMaxSeconds;
+            return;
+        }
+
+        // The slider snaps to minimum plus a whole number of steps, and computing that in binary
+        // floating point drifts: a tenth of a second is not representable, so the tick a user picks
+        // arrives here as 9.799999999999999 and is stored and displayed that way.
+        double snapped = Math.Round(value, OscTickIntervalDecimals, MidpointRounding.AwayFromZero);
+        if (snapped != value)
+            ScanningInterval = snapped;
     }
 
     partial void OnMinimizeToTrayChanged(bool value)
