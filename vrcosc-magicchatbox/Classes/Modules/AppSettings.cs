@@ -34,7 +34,7 @@ public partial class AppSettings : VersionedSettings
 
     [ObservableProperty] private bool _countOculusSystemAsVR = true;
     [ObservableProperty] private bool _topmost = false;
-    [ObservableProperty] private UpdateChannelMode _stableUpdateMode = UpdateChannelMode.Notify;
+    [ObservableProperty] private UpdateChannelMode _stableUpdateMode = UpdateChannelMode.Auto;
     [ObservableProperty] private UpdateChannelMode _preReleaseUpdateMode = UpdateChannelMode.Off;
     [ObservableProperty] private bool _checkUpdateOnStartup = true;
 

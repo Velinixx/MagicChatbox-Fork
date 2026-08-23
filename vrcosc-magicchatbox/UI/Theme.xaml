@@ -914,6 +914,84 @@
         BasedOn="{StaticResource {x:Type CheckBox}}"
         TargetType="{x:Type CheckBox}" />
 
+    <!--
+        For sitting beside something else on one line rather than in a list of settings, with the label
+        leading and the box trailing. The default checkbox carries a bottom margin, which is what stacks
+        a settings list evenly and what stops anything next to it from ever looking vertically centred.
+    -->
+    <Style
+        x:Key="CompactCheckBox"
+        BasedOn="{StaticResource {x:Type CheckBox}}"
+        TargetType="{x:Type CheckBox}">
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CheckBox}">
+                    <Border Padding="{TemplateBinding Padding}" Background="Transparent">
+                        <!--
+                            A star column, so the box is pushed to the far edge when the checkbox is
+                            stretched across a row, and sits right after the label when it is not.
+                        -->
+                        <Grid VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ContentPresenter
+                                Grid.Column="0"
+                                Margin="0,0,6,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                RecognizesAccessKey="True" />
+                            <Border
+                                x:Name="CheckBorder"
+                                Grid.Column="1"
+                                Width="14"
+                                Height="14"
+                                VerticalAlignment="Center"
+                                Background="#FF3A2F54"
+                                BorderBrush="#FF6555A0"
+                                BorderThickness="1"
+                                CornerRadius="3">
+                                <Path
+                                    x:Name="CheckMark"
+                                    Width="8"
+                                    Height="6"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Data="M 1,4.5 L 3.5,7 L 9,1.5"
+                                    Stretch="Uniform"
+                                    Stroke="White"
+                                    StrokeEndLineCap="Round"
+                                    StrokeLineJoin="Round"
+                                    StrokeStartLineCap="Round"
+                                    StrokeThickness="2"
+                                    Visibility="Collapsed" />
+                            </Border>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="CheckBorder" Property="Background" Value="#FF7C5CBF" />
+                            <Setter TargetName="CheckBorder" Property="BorderBrush" Value="#FF9B7DE8" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="CheckBorder" Property="BorderBrush" Value="#FF6B5CA0" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="OptionCardStyle" TargetType="{x:Type Border}">
         <Setter Property="Margin" Value="0,0,0,5" />
         <Setter Property="Padding" Value="8" />
