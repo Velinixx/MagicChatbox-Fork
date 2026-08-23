@@ -20,11 +20,11 @@ public class PulsoidOAuthHandler : IDisposable, IPulsoidTokenValidator
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly INavigationService _nav;
-    private HttpClient _httpClient;
+    private HttpClient? _httpClient;
     private HttpClient OAuthHttpClient => _httpClient ??= _httpClientFactory.CreateClient("Pulsoid");
-    private HttpListener httpListener;
+    private HttpListener? httpListener;
     private readonly object listenerLock = new object();
-    private HttpListener secondListener;
+    private HttpListener? secondListener;
 
     public PulsoidOAuthHandler(IHttpClientFactory httpClientFactory, INavigationService nav)
     {
@@ -67,11 +67,11 @@ public class PulsoidOAuthHandler : IDisposable, IPulsoidTokenValidator
         }
     }
 
-    public async Task<string> AuthenticateUserAsync(string authorizationEndpoint)
+    public async Task<string?> AuthenticateUserAsync(string authorizationEndpoint)
     {
         try
         {
-            string token = null;
+            string? token = null;
 
             if (httpListener == null || secondListener == null)
                 throw new InvalidOperationException("Listeners are not started");
@@ -124,10 +124,18 @@ public class PulsoidOAuthHandler : IDisposable, IPulsoidTokenValidator
         GC.SuppressFinalize(this);
     }
 
-    public static Dictionary<string, string> ParseQueryString(string queryString)
+    public static Dictionary<string, string?> ParseQueryString(string queryString)
     {
         var nvc = HttpUtility.ParseQueryString(queryString);
-        return nvc.AllKeys.ToDictionary(k => k, k => nvc[k]);
+        var result = new Dictionary<string, string?>();
+        foreach (var key in nvc.AllKeys)
+        {
+            if (key == null)
+                continue;
+
+            result[key] = nvc[key];
+        }
+        return result;
     }
 
     public void StartListeners()
@@ -137,8 +145,8 @@ public class PulsoidOAuthHandler : IDisposable, IPulsoidTokenValidator
             if (httpListener != null && secondListener != null)
                 return;
 
-            HttpListener first = null;
-            HttpListener second = null;
+            HttpListener? first = null;
+            HttpListener? second = null;
             try
             {
                 first = new HttpListener { Prefixes = { Core.Constants.PulsoidOAuthRedirectUri } };
@@ -171,7 +179,7 @@ public class PulsoidOAuthHandler : IDisposable, IPulsoidTokenValidator
         }
     }
 
-    private static void CloseListenerSafely(HttpListener listener)
+    private static void CloseListenerSafely(HttpListener? listener)
     {
         if (listener == null)
             return;
@@ -273,7 +281,7 @@ public class PulsoidOAuthHandler : IDisposable, IPulsoidTokenValidator
     private class TokenInfo
     {
         [JsonProperty("scopes")]
-        public string[] Scopes { get; set; }
+        public string[]? Scopes { get; set; }
 
         [JsonProperty("expires_in")]
         public long ExpiresIn { get; set; }

@@ -53,7 +53,7 @@ public class UpdateStateStoreTests : IDisposable
 
         Assert.True(PendingUpdate.Write(dir, written));
 
-        PendingUpdateInfo read = PendingUpdate.Read(dir);
+        PendingUpdateInfo? read = PendingUpdate.Read(dir);
 
         Assert.NotNull(read);
         Assert.Equal(written.Version, read.Version);
@@ -74,7 +74,7 @@ public class UpdateStateStoreTests : IDisposable
             dir,
             new PendingUpdateInfo("0.9.231", UpdateChannel.Stable, "staged.zip", "abc", StagedAt));
 
-        PendingUpdateInfo read = PendingUpdate.Read(dir);
+        PendingUpdateInfo? read = PendingUpdate.Read(dir);
 
         Assert.NotNull(read);
         Assert.Equal(StagedAt, read.StagedAtUtc);
@@ -135,7 +135,7 @@ public class UpdateStateStoreTests : IDisposable
             PendingUpdate.PathFor(dir),
             "{ \"version\": \"0.9.231\", \"channel\": " + encoded + ", \"stagedPath\": \"staged.zip\", \"sha256\": \"abc\" }");
 
-        PendingUpdateInfo read = PendingUpdate.Read(dir);
+        PendingUpdateInfo? read = PendingUpdate.Read(dir);
 
         Assert.NotNull(read);
         Assert.Equal(UpdateChannel.Stable, read.Channel);

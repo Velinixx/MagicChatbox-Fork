@@ -27,7 +27,7 @@ public sealed class JsonSettingsProvider<T> : ISettingsProvider<T>, IDisposable 
     private readonly string _filePath;
     private readonly object _lock = new();
     private readonly object _timerLock = new();
-    private Timer _debounceTimer;
+    private Timer? _debounceTimer;
     private DateTime? _firstDirtyChangeUtc;
     private const int DebounceDelayMs = 2000;
     private const int MaxSaveDelayMs = 30000;
@@ -57,7 +57,7 @@ public sealed class JsonSettingsProvider<T> : ISettingsProvider<T>, IDisposable 
     private bool _loadFailed;
     private bool _saveFailureLogged;
 
-    public event EventHandler SettingsChanged;
+    public event EventHandler? SettingsChanged;
 
     public JsonSettingsProvider(IEnvironmentService environment)
     {
@@ -193,7 +193,7 @@ public sealed class JsonSettingsProvider<T> : ISettingsProvider<T>, IDisposable 
             {
                 try
                 {
-                    object defaultVal = prop.GetValue(defaults);
+                    object? defaultVal = prop.GetValue(defaults);
                     prop.SetValue(_settings, defaultVal);
                     anyReset = true;
                     Logging.WriteInfo(
@@ -306,7 +306,7 @@ public sealed class JsonSettingsProvider<T> : ISettingsProvider<T>, IDisposable 
             npc.PropertyChanged -= OnSettingsPropertyChanged;
     }
 
-    private void OnSettingsPropertyChanged(object sender, PropertyChangedEventArgs e)
+    private void OnSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         // A property that is never serialized cannot make the file dirty. Some modules write these at
         // 1 Hz, which otherwise defeats the debounce and forces a byte-identical save every 30 seconds.

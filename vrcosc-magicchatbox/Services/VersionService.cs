@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Concurrent;
@@ -52,7 +52,7 @@ public sealed class VersionService : IVersionService
         {
             var assembly = Assembly.GetExecutingAssembly();
             var assemblyName = assembly.GetName();
-            string versionString = assemblyName.Version.ToString();
+            string versionString = assemblyName.Version!.ToString();
             var version = new ViewModels.Models.Version(versionString);
             return version.VersionNumber;
         }
@@ -91,7 +91,7 @@ public sealed class VersionService : IVersionService
 
     private async Task CheckForUpdateAsync()
     {
-        UpdateVerdict verdict = null;
+        UpdateVerdict? verdict = null;
 
         try
         {
@@ -225,12 +225,12 @@ public sealed class VersionService : IVersionService
 
     private static UpdateOffer ReadOffer(JToken release, UpdateChannel channel)
     {
-        string tag = release.Value<string>("tag_name");
+        string? tag = release.Value<string>("tag_name");
         if (string.IsNullOrWhiteSpace(tag))
             return UpdateOffer.Absent(channel);
 
-        JArray assets = release.Value<JArray>("assets");
-        JToken asset = assets?.FirstOrDefault(candidate =>
+        JArray? assets = release.Value<JArray>("assets");
+        JToken? asset = assets?.FirstOrDefault(candidate =>
                            (candidate.Value<string>("name") ?? string.Empty)
                            .EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                        ?? assets?.FirstOrDefault();
@@ -350,7 +350,7 @@ public sealed class VersionService : IVersionService
         response.EnsureSuccessStatusCode();
 
         string body = await response.Content.ReadAsStringAsync();
-        string etag = response.Headers.ETag?.ToString();
+        string? etag = response.Headers.ETag?.ToString();
 
         if (!string.IsNullOrEmpty(etag))
             _cache[url] = new CachedResponse(etag, body);
@@ -370,7 +370,7 @@ public sealed class VersionService : IVersionService
             using var response = await client.GetAsync(Core.Constants.GitHubRateLimitUrl);
             var data = JsonConvert.DeserializeObject<JObject>(await response.Content.ReadAsStringAsync());
 
-            JToken core = data?["resources"]?["core"];
+            JToken? core = data?["resources"]?["core"];
             if (core == null)
                 return RateLimitStatus.Unknown;
 
@@ -395,7 +395,7 @@ public sealed class VersionService : IVersionService
         if (string.IsNullOrEmpty(OpenAISettings.DefaultApiStream))
             return false;
 
-        string token = EncryptionMethods.DecryptString(OpenAISettings.DefaultApiStream);
+        string? token = EncryptionMethods.DecryptString(OpenAISettings.DefaultApiStream);
         if (string.IsNullOrEmpty(token))
             return false;
 

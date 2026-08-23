@@ -35,7 +35,7 @@ public class WeatherService : IWeatherService
 
     private readonly IUiDispatcher _dispatcher;
     private readonly IPrivacyConsentService _consentService;
-    private HttpClient _client;
+    private HttpClient? _client;
     private HttpClient Client => _client ??= _httpClientFactory.CreateClient("Weather");
     private readonly object SyncLock = new object();
 
@@ -53,9 +53,9 @@ public class WeatherService : IWeatherService
     private DateTime _lastFetchUtc = DateTime.MinValue;
     private DateTime _lastSuccessUtc = DateTime.MinValue;
     private DateTime _lastLocationFetchUtc = DateTime.MinValue;
-    private WeatherLocation _location;
-    private WeatherSnapshot _snapshot;
-    private string _locationCacheKey;
+    private WeatherLocation? _location;
+    private WeatherSnapshot? _snapshot;
+    private string? _locationCacheKey;
     private readonly IReadOnlyDictionary<int, string> DefaultConditionMap = new Dictionary<int, string>
     {
         { 0, "Clear" },
@@ -198,7 +198,7 @@ public class WeatherService : IWeatherService
 
         string template = NormalizeTemplate(Settings.WeatherTemplate);
         bool hasTemplate = !string.IsNullOrWhiteSpace(template);
-        WeatherTokens tokens = BuildWeatherTokens(hasTemplate);
+        WeatherTokens? tokens = BuildWeatherTokens(hasTemplate);
         if (tokens == null)
         {
             if (Settings.WeatherFallbackMode != WeatherFallbackMode.ShowNA)
@@ -231,7 +231,7 @@ public class WeatherService : IWeatherService
             return string.Empty;
         }
 
-        WeatherSnapshot snapshot;
+        WeatherSnapshot? snapshot;
         lock (SyncLock)
         {
             snapshot = _snapshot;
@@ -245,11 +245,11 @@ public class WeatherService : IWeatherService
 
     public string BuildSampleWeatherText() => ComposeWeatherOnly(SampleSnapshot);
 
-    private string ComposeWeatherOnly(WeatherSnapshot snapshot)
+    private string ComposeWeatherOnly(WeatherSnapshot? snapshot)
     {
         string template = NormalizeTemplate(Settings.WeatherTemplate);
         bool hasTemplate = !string.IsNullOrWhiteSpace(template);
-        WeatherTokens tokens = BuildWeatherTokens(hasTemplate, snapshot);
+        WeatherTokens? tokens = BuildWeatherTokens(hasTemplate, snapshot);
         if (tokens == null)
         {
             if (Settings.WeatherFallbackMode != WeatherFallbackMode.ShowNA)
@@ -269,9 +269,9 @@ public class WeatherService : IWeatherService
         return tokens.Weather ?? string.Empty;
     }
 
-    private WeatherTokens BuildWeatherTokens(bool ignoreCustomSeparators)
+    private WeatherTokens? BuildWeatherTokens(bool ignoreCustomSeparators)
     {
-        WeatherSnapshot snapshot;
+        WeatherSnapshot? snapshot;
         lock (SyncLock)
         {
             snapshot = _snapshot;
@@ -280,7 +280,7 @@ public class WeatherService : IWeatherService
         return BuildWeatherTokens(ignoreCustomSeparators, snapshot);
     }
 
-    private WeatherTokens BuildWeatherTokens(bool ignoreCustomSeparators, WeatherSnapshot snapshot)
+    private WeatherTokens? BuildWeatherTokens(bool ignoreCustomSeparators, WeatherSnapshot? snapshot)
     {
         if (snapshot == null)
         {
@@ -572,7 +572,7 @@ public class WeatherService : IWeatherService
     {
         try
         {
-            WeatherLocation location = await GetLocationAsync().ConfigureAwait(false);
+            WeatherLocation? location = await GetLocationAsync().ConfigureAwait(false);
             if (location == null)
             {
                 return;
@@ -637,7 +637,7 @@ public class WeatherService : IWeatherService
         }
     }
 
-    private async Task<WeatherLocation> GetLocationAsync()
+    private async Task<WeatherLocation?> GetLocationAsync()
     {
         string cacheKey = BuildLocationCacheKey();
         lock (SyncLock)
@@ -650,7 +650,7 @@ public class WeatherService : IWeatherService
             }
         }
 
-        WeatherLocation location = await ResolveLocationAsync().ConfigureAwait(false);
+        WeatherLocation? location = await ResolveLocationAsync().ConfigureAwait(false);
         if (location == null)
         {
             return null;
@@ -677,7 +677,7 @@ public class WeatherService : IWeatherService
         };
     }
 
-    private async Task<WeatherLocation> ResolveLocationAsync()
+    private async Task<WeatherLocation?> ResolveLocationAsync()
     {
         switch (Settings.WeatherLocationMode)
         {
@@ -700,7 +700,7 @@ public class WeatherService : IWeatherService
         }
     }
 
-    private WeatherLocation BuildLocationFromCoordinates(double latitude, double longitude)
+    private WeatherLocation? BuildLocationFromCoordinates(double latitude, double longitude)
     {
         if (!IsValidCoordinate(latitude, longitude))
         {
@@ -710,7 +710,7 @@ public class WeatherService : IWeatherService
         return new WeatherLocation(latitude, longitude);
     }
 
-    private async Task<WeatherLocation> BuildLocationFromCityAsync(string cityName)
+    private async Task<WeatherLocation?> BuildLocationFromCityAsync(string cityName)
     {
         string city = string.IsNullOrWhiteSpace(cityName) ? DefaultCityName : cityName.Trim();
         if (string.Equals(city, DefaultCityName, StringComparison.OrdinalIgnoreCase))
@@ -736,7 +736,7 @@ public class WeatherService : IWeatherService
         return new WeatherLocation(latitude.Value, longitude.Value);
     }
 
-    private async Task<WeatherLocation> BuildLocationFromIPAsync()
+    private async Task<WeatherLocation?> BuildLocationFromIPAsync()
     {
         string response = await Client.GetStringAsync(Core.Constants.IpGeoLocationUrl).ConfigureAwait(false);
         var json = JObject.Parse(response);
@@ -774,7 +774,7 @@ public class WeatherService : IWeatherService
 
     private string MapWeatherCode(int code)
     {
-        if (!DefaultConditionMap.TryGetValue(code, out string defaultValue))
+        if (!DefaultConditionMap.TryGetValue(code, out string? defaultValue))
         {
             defaultValue = string.Empty;
         }
@@ -880,7 +880,7 @@ public class WeatherService : IWeatherService
 
     private string MapWeatherEmoji(int code)
     {
-        if (!DefaultConditionIconMap.TryGetValue(code, out string defaultIcon))
+        if (!DefaultConditionIconMap.TryGetValue(code, out string? defaultIcon))
         {
             defaultIcon = string.Empty;
         }
@@ -920,13 +920,13 @@ public class WeatherService : IWeatherService
             return new WeatherTokens(weather);
         }
 
-        public string Temp { get; }
-        public string Unit { get; }
-        public string TempWithUnit { get; }
-        public string Condition { get; }
-        public string Humidity { get; }
-        public string Wind { get; }
-        public string FeelsLike { get; }
+        public string? Temp { get; }
+        public string? Unit { get; }
+        public string? TempWithUnit { get; }
+        public string? Condition { get; }
+        public string? Humidity { get; }
+        public string? Wind { get; }
+        public string? FeelsLike { get; }
         public string Weather { get; }
     }
 

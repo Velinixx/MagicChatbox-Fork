@@ -23,9 +23,13 @@ namespace vrcosc_magicchatbox.Classes
             if (!enumType.IsEnum)
                 return Binding.DoNothing;
 
+            string? parameterText = parameter.ToString();
+            if (parameterText == null)
+                return Binding.DoNothing;
+
             try
             {
-                return Enum.Parse(enumType, parameter.ToString(), ignoreCase: true);
+                return Enum.Parse(enumType, parameterText, ignoreCase: true);
             }
             catch (ArgumentException)
             {

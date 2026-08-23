@@ -53,7 +53,7 @@ public static class SteamVrManifest
     {
         try
         {
-            string directory = Path.GetDirectoryName(manifestPath);
+            string? directory = Path.GetDirectoryName(manifestPath);
             if (!string.IsNullOrEmpty(directory))
                 Directory.CreateDirectory(directory);
 

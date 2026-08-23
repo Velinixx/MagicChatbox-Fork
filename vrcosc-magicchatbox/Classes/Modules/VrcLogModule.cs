@@ -160,7 +160,6 @@ public partial class VrcLogModule : ObservableObject, IModule
     private DateTimeOffset _appStartedAt = DateTimeOffset.UtcNow;
     private double _totalOfflineSeconds;
     private DateTime _lastSessionSave = DateTime.MinValue;
-    private bool _sessionResumed;
 
     private int _downloadSizeMB;
     private double _downloadSpeedMBps;
@@ -448,7 +447,7 @@ public partial class VrcLogModule : ObservableObject, IModule
                     if (!Directory.Exists(VrcLogDir))
                     {
                         CloseLogStream();
-                        await Task.Delay(5000, ct);
+                        await Task.Delay(5000, ct).ConfigureAwait(false);
                         continue;
                     }
 
@@ -460,7 +459,7 @@ public partial class VrcLogModule : ObservableObject, IModule
                         if (latestFile == null)
                         {
                             CloseLogStream();
-                            await Task.Delay(2000, ct);
+                            await Task.Delay(2000, ct).ConfigureAwait(false);
                             continue;
                         }
 
@@ -512,7 +511,7 @@ public partial class VrcLogModule : ObservableObject, IModule
                         _logStream ??= new FileStream(_currentLogFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     }
 
-                    if (_logStream != null && await ReadNewLogLinesAsync(_logStream, ct))
+                    if (_logStream != null && await ReadNewLogLinesAsync(_logStream, ct).ConfigureAwait(false))
                         _lastLogActivity = DateTime.UtcNow;
 
                     lock (_stateLock)
@@ -526,7 +525,7 @@ public partial class VrcLogModule : ObservableObject, IModule
                                 string stats = Settings.TemplateSessionStats
                                     .Replace("{worlds}", _sessionWorldsVisited.ToString())
                                     .Replace("{players}", _allPlayersSeen.Count.ToString())
-                                    .Replace("{peak_session}", _peakPlayerCountThisSession.ToString());
+                                    .Replace("{peak_session}", PeakPlayerCountThisSession.ToString());
                                 SetTransient(stats, Settings.SessionStatsDuration, TransientPriority.SessionStats);
                             }
                         }
@@ -569,7 +568,7 @@ public partial class VrcLogModule : ObservableObject, IModule
                     Settings.UseWindowDetection && !_vrchatProcessDetected
                         ? IdlePollIntervalMs
                         : ActivePollIntervalMs,
-                    ct);
+                    ct).ConfigureAwait(false);
             }
         }
         finally
@@ -612,7 +611,7 @@ public partial class VrcLogModule : ObservableObject, IModule
         int read = 0;
         while (read < wanted)
         {
-            int got = await fs.ReadAsync(buffer.AsMemory(read, wanted - read), ct);
+            int got = await fs.ReadAsync(buffer.AsMemory(read, wanted - read), ct).ConfigureAwait(false);
             if (got <= 0) break;
             read += got;
         }
@@ -780,7 +779,7 @@ public partial class VrcLogModule : ObservableObject, IModule
             var logTime = ParseLogTimestamp(line);
             _worldJoinedAt = logTime > DateTime.MinValue ? logTime : DateTime.Now;
 
-            _isDownloading = false;
+            IsDownloading = false;
             _downloadSizeMB = 0;
             _downloadSpeedMBps = 0;
 
@@ -1099,12 +1098,12 @@ public partial class VrcLogModule : ObservableObject, IModule
             _pulseSequence[address] = seq;
         }
 
-        Task.Run(async () =>
+        _ = Task.Run(async () =>
         {
             try
             {
                 _oscSender.SendOscParam(address, true);
-                await Task.Delay(150);
+                await Task.Delay(150).ConfigureAwait(false);
 
                 lock (_pulseSequence)
                 {
@@ -1229,8 +1228,8 @@ public partial class VrcLogModule : ObservableObject, IModule
         }
 
         int currentCount = _currentRoomPlayers.Count;
-        if (currentCount > _peakPlayerCountThisSession)
-            _peakPlayerCountThisSession = currentCount;
+        if (currentCount > PeakPlayerCountThisSession)
+            PeakPlayerCountThisSession = currentCount;
     }
 
     private void CloseEncounter(string userId)
@@ -1305,7 +1304,7 @@ public partial class VrcLogModule : ObservableObject, IModule
             _pulseSequence.Clear();
             _pendingOwnerUserId = string.Empty;
             _peakPlayerCount = 0;
-            _peakPlayerCountThisSession = 0;
+            PeakPlayerCountThisSession = 0;
             _worldJoinedAt = DateTime.MinValue;
             _currentInstanceKey = string.Empty;
             _encounterRecords.Clear();
@@ -1382,7 +1381,6 @@ public partial class VrcLogModule : ObservableObject, IModule
             _appStartedAt = saved.AppStartedAt;
             double offlineGap = (DateTimeOffset.UtcNow - saved.LastActiveAt).TotalSeconds;
             _totalOfflineSeconds = saved.TotalOfflineSeconds + Math.Max(0, offlineGap);
-            _sessionResumed = true;
 
             Logging.WriteInfo($"VrcRadar: Resumed session — world joined {saved.WorldJoinedAt:HH:mm}, offline gap {offlineGap:F0}s, total offline {_totalOfflineSeconds:F0}s");
         }

@@ -31,7 +31,7 @@ public sealed class SteamVrAutoStartService : ISteamVrAutoStartService, IDisposa
     private readonly IAppState _appState;
     private readonly IProcessPresenceService _processes;
     private readonly Action _requestShutdown;
-    private readonly Func<string> _executablePath;
+    private readonly Func<string?> _executablePath;
     private readonly string _manifestPath;
 
     private int _reconcileInProgress;
@@ -47,8 +47,8 @@ public sealed class SteamVrAutoStartService : ISteamVrAutoStartService, IDisposa
         IAppState appState,
         IProcessPresenceService processes,
         Action requestShutdown,
-        string localAppDataPath = null,
-        Func<string> executablePath = null)
+        string? localAppDataPath = null,
+        Func<string?>? executablePath = null)
     {
         _applications = applications;
         _settingsProvider = settingsProvider;
@@ -98,13 +98,13 @@ public sealed class SteamVrAutoStartService : ISteamVrAutoStartService, IDisposa
         Stop();
     }
 
-    private void OnSettingChanged(object sender, PropertyChangedEventArgs e)
+    private void OnSettingChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(AppSettings.StartWithSteamVr))
             Reconcile();
     }
 
-    private void OnAppStateChanged(object sender, PropertyChangedEventArgs e)
+    private void OnAppStateChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(IAppState.IsVRRunning))
             return;
@@ -213,7 +213,7 @@ public sealed class SteamVrAutoStartService : ISteamVrAutoStartService, IDisposa
 
     private SteamVrResult Register(AppSettings settings)
     {
-        string executable = _executablePath();
+        string? executable = _executablePath();
         if (string.IsNullOrWhiteSpace(executable) || !File.Exists(executable))
             return SteamVrResult.Failed("Could not work out where MagicChatbox is running from.");
 
@@ -252,11 +252,11 @@ public sealed class SteamVrAutoStartService : ISteamVrAutoStartService, IDisposa
 
     private void ArmRetry() => _retryPending = true;
 
-    private static string ResolveExecutablePath()
+    private static string? ResolveExecutablePath()
     {
         try
         {
-            string path = Environment.ProcessPath;
+            string? path = Environment.ProcessPath;
             if (!string.IsNullOrWhiteSpace(path))
                 return Path.GetFullPath(path);
 

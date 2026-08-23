@@ -44,7 +44,8 @@ namespace vrcosc_magicchatbox
             Services.GetRequiredService<ISettingsProvider<WeatherSettings>>().Value);
         private static WeatherSettings _weatherSettings => _lazyWeatherSettings.Value;
 
-        public static IMediaLinkService ApplicationMediaController { get; private set; }
+        // Assigned during InitializeComponentsWithProgress, before any consumer can run.
+        public static IMediaLinkService ApplicationMediaController { get; private set; } = null!;
 
         private readonly Stopwatch _startupStopwatch = new();
         private static readonly TimeSpan StartupWatchdogTimeout = TimeSpan.FromSeconds(120);
@@ -64,7 +65,7 @@ namespace vrcosc_magicchatbox
 
         public const string SteamVrLaunchArgument = "-steamvr";
 
-        public static MainWindow mainWindow;
+        public static MainWindow? mainWindow;
 
         protected override async void OnStartup(StartupEventArgs e)
         {
@@ -324,7 +325,7 @@ namespace vrcosc_magicchatbox
                 loadingWindow.UpdateProgress("Building the main window shell... Hammer, nails, UI!", 98.5, "Rolling out the red carpet... Here comes the UI!");
                 Logging.WriteInfo("Creating MainWindow instance.");
 
-                mainWindow = new MainWindow(
+                MainWindow mainWindow = new MainWindow(
                     Services.GetRequiredService<ScanLoopService>(),
                     Services.GetRequiredService<ModuleBootstrapper>(),
                     Services.GetRequiredService<Core.Services.IModuleHost>(),
@@ -332,6 +333,7 @@ namespace vrcosc_magicchatbox
                     Services.GetRequiredService<ITrayIconService>(),
                     Services.GetRequiredService<HotkeyManagement>(),
                     Services.GetRequiredService<Core.Configuration.ISettingsProvider<Classes.Modules.AppSettings>>());
+                App.mainWindow = mainWindow;
                 Logging.WriteInfo("MainWindow instance created.");
 
                 loadingWindow.UpdateProgress("Rolling out the red carpet... Here comes the UI!", 99, "Wiring up the final UI bits... Almost there!");
@@ -654,7 +656,7 @@ namespace vrcosc_magicchatbox
             string nlogConfigPath = Path.Combine(AppContext.BaseDirectory, "NLog.config");
             if (File.Exists(nlogConfigPath))
             {
-                LogManager.LoadConfiguration(nlogConfigPath);
+                LogManager.Setup().LoadConfigurationFromFile(nlogConfigPath);
             }
 
             try

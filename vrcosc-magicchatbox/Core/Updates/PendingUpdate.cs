@@ -44,7 +44,7 @@ public static class PendingUpdate
         }
     }
 
-    public static PendingUpdateInfo Read(string dataPath)
+    public static PendingUpdateInfo? Read(string dataPath)
     {
         try
         {

@@ -30,7 +30,7 @@ public sealed class AutoUpdateService : IAutoUpdateService
 
     private readonly SemaphoreSlim _stagingGate = new(1, 1);
     private IReadOnlyList<string> _blockedVersions = [];
-    private string _dataPath;
+    private string _dataPath = string.Empty;
 
     public AutoUpdateService(
         AppUpdateState updateState,
@@ -84,7 +84,7 @@ public sealed class AutoUpdateService : IAutoUpdateService
 
     public void ReportStartupHealthy()
     {
-        if (_dataPath == null)
+        if (string.IsNullOrEmpty(_dataPath))
             return;
 
         StartupHealth health = StartupHealthBeacon.Read(_dataPath);
@@ -121,7 +121,7 @@ public sealed class AutoUpdateService : IAutoUpdateService
             UpdateApp updater = CreateUpdater();
             _dataPath = updater.DataDirectory;
 
-            PendingUpdateInfo staged = PendingUpdate.Read(_dataPath);
+            PendingUpdateInfo? staged = PendingUpdate.Read(_dataPath);
             if (staged != null && ReleaseVersion.Compare(staged.Version, verdict.Version) >= 0)
                 return;
 
@@ -162,7 +162,7 @@ public sealed class AutoUpdateService : IAutoUpdateService
 
     private bool TryApplyStagedUpdate(UpdateApp updater)
     {
-        PendingUpdateInfo staged = PendingUpdate.Read(_dataPath);
+        PendingUpdateInfo? staged = PendingUpdate.Read(_dataPath);
         if (staged == null)
             return false;
 

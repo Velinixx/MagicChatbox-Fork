@@ -16,7 +16,7 @@ namespace vrcosc_magicchatbox.ViewModels.Models
 
         public string ReleaseNotes { get; set; }
 
-        private string _versionNumber;
+        private string _versionNumber = string.Empty;
 
         public string VersionNumber
         {

@@ -22,13 +22,13 @@ public class UpdateApp
     private static int _legacyWorkspacesChecked;
     private const string ExecutableName = "MagicChatbox.exe";
     private const int UpdateLocationMetadataVersion = 2;
-    private string backupPath;
-    private string currentAppPath;
+    private string backupPath = string.Empty;
+    private string currentAppPath = string.Empty;
     private readonly string dataPath;
-    private string maintenanceRunnerPath;
-    private string magicChatboxExePath;
-    private string tempPath;
-    private string unzipPath;
+    private string maintenanceRunnerPath = string.Empty;
+    private string magicChatboxExePath = string.Empty;
+    private string tempPath = string.Empty;
+    private string unzipPath = string.Empty;
     private readonly AppUpdateState _updateState;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IUiDispatcher _dispatcher;
@@ -497,7 +497,7 @@ public class UpdateApp
                 }
                 else
                 {
-                    string directory = Path.GetDirectoryName(destinationPath);
+                    string? directory = Path.GetDirectoryName(destinationPath);
                     if (!string.IsNullOrEmpty(directory))
                         Directory.CreateDirectory(directory);
                     entry.ExtractToFile(destinationPath, true);
@@ -532,7 +532,7 @@ public class UpdateApp
     /// </summary>
     public bool TryStartStagedInstall()
     {
-        PendingUpdateInfo pending = PendingUpdate.Read(dataPath);
+        PendingUpdateInfo? pending = PendingUpdate.Read(dataPath);
         if (pending == null)
             return false;
 
@@ -546,8 +546,8 @@ public class UpdateApp
                 return false;
             }
 
-            if (Version.TryParse(_updateState.AppVersion?.VersionNumber, out Version running) &&
-                Version.TryParse(pending.Version, out Version staged) &&
+            if (Version.TryParse(_updateState.AppVersion?.VersionNumber, out Version? running) &&
+                Version.TryParse(pending.Version, out Version? staged) &&
                 staged <= running)
             {
                 Logging.WriteInfo($"The staged update ({pending.Version}) is not newer than {running}; discarding it.");
@@ -633,7 +633,7 @@ public class UpdateApp
 
         try
         {
-            string root = Path.GetPathRoot(Path.GetFullPath(path));
+            string? root = Path.GetPathRoot(Path.GetFullPath(path));
             if (string.IsNullOrWhiteSpace(root))
                 return;
 
@@ -685,7 +685,7 @@ public class UpdateApp
                 }
                 else
                 {
-                    string directory = Path.GetDirectoryName(destinationPath);
+                    string? directory = Path.GetDirectoryName(destinationPath);
                     if (!string.IsNullOrEmpty(directory))
                         Directory.CreateDirectory(directory);
                     entry.ExtractToFile(destinationPath, true);
@@ -819,7 +819,7 @@ public class UpdateApp
     }
 
 
-    private void SaveUpdateLocation(string backupPath = null)
+    private void SaveUpdateLocation(string? backupPath = null)
     {
         Directory.CreateDirectory(dataPath);
 
@@ -926,7 +926,7 @@ public class UpdateApp
             return false;
         }
 
-        Version backupVersion = GetApplicationVersion(Path.Combine(backupPath, ExecutableName));
+        Version? backupVersion = GetApplicationVersion(Path.Combine(backupPath, ExecutableName));
         if (backupVersion != null)
         {
             _updateState.RollBackVersion = backupVersion;
@@ -954,7 +954,7 @@ public class UpdateApp
         }
     }
 
-    public Version GetApplicationVersion(string exePath)
+    public Version? GetApplicationVersion(string exePath)
     {
         try
         {
@@ -964,7 +964,7 @@ public class UpdateApp
             }
 
             FileVersionInfo fileInfo = FileVersionInfo.GetVersionInfo(exePath);
-            if (Version.TryParse(fileInfo.FileVersion, out Version version))
+            if (Version.TryParse(fileInfo.FileVersion, out Version? version))
             {
                 return version;
             }
@@ -977,7 +977,7 @@ public class UpdateApp
         return null;
     }
 
-    public async Task PrepareUpdate(string customZipPath = null, bool unattended = false)
+    public async Task PrepareUpdate(string? customZipPath = null, bool unattended = false)
     {
         bool gateAcquired = false;
         try
@@ -1018,7 +1018,7 @@ public class UpdateApp
 
             DigestVerificationResult verification = default;
 
-            if (!useCustomZip)
+            if (string.IsNullOrEmpty(customZipPath))
             {
                 UpdateStatus("Requesting update");
                 string zipPath = Path.Combine(tempPath, "update.zip");
@@ -1123,7 +1123,7 @@ public class UpdateApp
                 return;
             }
 
-            string currentVersion = GetApplicationVersion(Path.Combine(currentAppPath, ExecutableName))?.ToString()
+            string? currentVersion = GetApplicationVersion(Path.Combine(currentAppPath, ExecutableName))?.ToString()
                 ?? _updateState.AppVersion?.VersionNumber;
 
             string rollbackRecoveryPath = Path.Combine(dataPath, "rollback_recovery");
@@ -1249,11 +1249,9 @@ public class UpdateApp
         Logging.WriteException(new Exception("No rollback backup was found."), MSGBox: true);
     }
 
-    public void UpdateApplication(bool admin = false, string customZipPath = null)
+    public void UpdateApplication(bool admin = false, string? customZipPath = null)
     {
-        bool useCustomZip = !string.IsNullOrEmpty(customZipPath);
-
-        if (useCustomZip)
+        if (!string.IsNullOrEmpty(customZipPath))
         {
             unzipPath = Path.Combine(GetWorkspaceRoot(), "custom_unzip");
             magicChatboxExePath = Path.Combine(unzipPath, ExecutableName);
@@ -1356,7 +1354,7 @@ public class UpdateApp
         return $"Update failed: {reason}";
     }
 
-    public void UpdateStatus(string message, StartUp startUp = null, double proc = 50)
+    public void UpdateStatus(string message, StartUp? startUp = null, double proc = 50)
     {
         _dispatcher.BeginInvoke(() =>
         {

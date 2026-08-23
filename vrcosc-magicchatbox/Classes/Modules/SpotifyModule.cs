@@ -451,6 +451,11 @@ public sealed partial class SpotifyModule : ObservableObject, IModule
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return;
+            }
+
             bool liked = false;
             string? trackId = playback.Value?.Track?.Id;
             if (Settings.ShowLiked && !string.IsNullOrWhiteSpace(trackId))

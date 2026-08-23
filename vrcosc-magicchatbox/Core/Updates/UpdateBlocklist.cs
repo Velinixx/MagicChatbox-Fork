@@ -32,6 +32,7 @@ public static class UpdateBlocklist
 
             return JArray.Parse(json)
                 .Select(entry => entry.Value<string>())
+                .OfType<string>()
                 .Where(version => !string.IsNullOrWhiteSpace(version))
                 .ToArray();
         }

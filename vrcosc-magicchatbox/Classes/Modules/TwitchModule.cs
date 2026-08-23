@@ -715,7 +715,7 @@ public sealed partial class TwitchModule : ObservableObject, IModule
         string titleLabel = useSmallText ? ToSmallTextPreserveEmoji(titleLabelSource) : titleLabelSource;
         string titleWithLabel = BuildLabeledValue(titleLabel, title);
 
-        string channel = settings.ShowChannelName ? settings.ChannelName?.Trim() : string.Empty;
+        string channel = settings.ShowChannelName ? (settings.ChannelName?.Trim() ?? string.Empty) : string.Empty;
         string channelLabelSource = string.IsNullOrWhiteSpace(settings.ChannelPrefix) ? string.Empty : settings.ChannelPrefix.Trim();
         string channelLabel = useSmallText ? ToSmallTextPreserveEmoji(channelLabelSource) : channelLabelSource;
         string channelWithLabel = BuildLabeledValue(channelLabel, channel);

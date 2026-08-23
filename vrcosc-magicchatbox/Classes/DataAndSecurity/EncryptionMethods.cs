@@ -6,7 +6,7 @@ namespace vrcosc_magicchatbox.Classes.DataAndSecurity;
 
 internal static class EncryptionMethods
 {
-    public static string DecryptString(string cipherText)
+    public static string? DecryptString(string cipherText)
     {
         try
         {
@@ -35,7 +35,7 @@ internal static class EncryptionMethods
         }
     }
 
-    public static string EncryptString(string plainText)
+    public static string? EncryptString(string plainText)
     {
         try
         {

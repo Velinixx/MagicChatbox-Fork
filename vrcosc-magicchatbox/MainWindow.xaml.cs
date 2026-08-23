@@ -1,5 +1,4 @@
 ﻿using System;
-using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows;
@@ -191,7 +190,7 @@ namespace vrcosc_magicchatbox
             }
         }
 
-        private void MainWindow_StateChanged(object sender, EventArgs e)
+        private void MainWindow_StateChanged(object? sender, EventArgs e)
         {
             if (WindowState == WindowState.Maximized)
             {
@@ -372,7 +371,7 @@ namespace vrcosc_magicchatbox
             _ = _scanLoop.Scantick(true);
         }
 
-        public static event EventHandler ShadowOpacityChanged;
+        public static event EventHandler? ShadowOpacityChanged;
 
         private void Button_close_Click(object sender, RoutedEventArgs e)
         {
@@ -420,7 +419,7 @@ namespace vrcosc_magicchatbox
             return notificationText;
         }
 
-        private async void MainWindow_ClosingAsync(object sender, System.ComponentModel.CancelEventArgs e)
+        private async void MainWindow_ClosingAsync(object? sender, System.ComponentModel.CancelEventArgs e)
         {
             SaveWindowPlacement();
 

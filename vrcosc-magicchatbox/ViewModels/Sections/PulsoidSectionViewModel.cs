@@ -171,7 +171,7 @@ public partial class PulsoidSectionViewModel : ObservableObject
                 return;
             }
 
-            string fragmentString = await oAuth.AuthenticateUserAsync(authEndpoint);
+            string? fragmentString = await oAuth.AuthenticateUserAsync(authEndpoint);
 
             if (string.IsNullOrEmpty(fragmentString))
             {
@@ -180,7 +180,7 @@ public partial class PulsoidSectionViewModel : ObservableObject
             }
 
             var fragment = PulsoidOAuthHandler.ParseQueryString(fragmentString);
-            if (fragment.TryGetValue("access_token", out string accessToken) && !string.IsNullOrEmpty(accessToken))
+            if (fragment.TryGetValue("access_token", out string? accessToken) && !string.IsNullOrEmpty(accessToken))
             {
                 var validation = await oAuth.ValidateTokenAsync(accessToken);
                 if (validation == PulsoidTokenValidation.Invalid)
