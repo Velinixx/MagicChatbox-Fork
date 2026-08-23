@@ -2553,13 +2553,15 @@
         template's parts, so inheriting would leave the base hover trigger fighting this one.
     -->
     <Style x:Key="TileHideButton" TargetType="Button">
-        <Setter Property="Width" Value="26" />
         <Setter Property="Height" Value="22" />
         <Setter Property="Margin" Value="0,0,4,0" />
         <Setter Property="Background" Value="{StaticResource DeckSurfaceBrush}" />
+        <!--  Muted where CUSTOMIZE is not: both sit in this row, but hiding is the lesser action.  -->
         <Setter Property="Foreground" Value="{StaticResource DeckTextMutedBrush}" />
-        <Setter Property="FontSize" Value="10" />
-        <Setter Property="Content" Value="👁" />
+        <Setter Property="FontFamily" Value="{StaticResource FontPrimary}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeMicro}" />
+        <Setter Property="Padding" Value="11,0,10,0" />
+        <Setter Property="Content" Value="HIDE" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="Template">
@@ -2567,6 +2569,7 @@
                 <ControlTemplate TargetType="Button">
                     <Border
                         x:Name="eye"
+                        Padding="{TemplateBinding Padding}"
                         Background="{TemplateBinding Background}"
                         CornerRadius="6"
                         SnapsToDevicePixels="True">
