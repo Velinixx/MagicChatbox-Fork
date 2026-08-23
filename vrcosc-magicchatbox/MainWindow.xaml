@@ -568,7 +568,7 @@
                                         Grid.Row="1"
                                         Grid.Column="0"
                                         Grid.ColumnSpan="2"
-                                        Margin="0,10,0,0"
+                                        Margin="0,2,3,-5"
                                         HorizontalAlignment="Stretch"
                                         FontFamily="/Fonts/#Albert Sans"
                                         Foreground="#FF9186B5"
