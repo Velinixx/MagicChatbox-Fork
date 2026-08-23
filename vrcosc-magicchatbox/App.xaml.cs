@@ -152,6 +152,7 @@ namespace vrcosc_magicchatbox
                 _loggingReady = true;
                 LogStartupPhase("Logging configured.");
 
+
                 Logging.Initialize(
                     Services.GetRequiredService<AppUpdateState>(),
                     Services.GetRequiredService<IEnvironmentService>(),
@@ -1144,11 +1145,16 @@ namespace vrcosc_magicchatbox
                     Services.GetRequiredService<IModuleHost>().RegisterModule(netStats);
                     LogStep("NetworkStats");
                 }, cancellationToken),
-                RunOptionalStartupTaskAsync("OpenAI", async () =>
+                RunOptionalStartupTaskAsync("OpenAI", () =>
                 {
                     var openAIModule = Services.GetRequiredService<OpenAIModule>();
                     var openAISettings = Services.GetRequiredService<ISettingsProvider<OpenAISettings>>().Value;
-                    await openAIModule.InitializeClient(openAISettings.AccessToken, openAISettings.OrganizationID);
+
+                    // The client is usable the moment it is constructed. Confirming the credentials costs a
+                    // round-trip to the OpenAI API, which held the window back for about two seconds.
+                    if (openAIModule.CreateClient(openAISettings.AccessToken, openAISettings.OrganizationID))
+                        _ = openAIModule.VerifyConnectionAsync();
+
                     LogStep("OpenAI");
                 }, cancellationToken),
                 RunOptionalStartupTaskAsync("IntelliChat", () =>
