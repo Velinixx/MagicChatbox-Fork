@@ -316,7 +316,8 @@ public static class ServiceRegistration
         services.AddSingleton<ComponentStatsSectionViewModel>(sp => new ComponentStatsSectionViewModel(
             sp.GetRequiredService<ISettingsProvider<AppSettings>>(),
             new Lazy<ComponentStatsModule>(() => sp.GetRequiredService<ComponentStatsModule>(), LazyThreadSafetyMode.PublicationOnly),
-            new Lazy<ComponentStatsViewModel>(() => sp.GetRequiredService<ComponentStatsViewModel>(), LazyThreadSafetyMode.PublicationOnly)));
+            new Lazy<ComponentStatsViewModel>(() => sp.GetRequiredService<ComponentStatsViewModel>(), LazyThreadSafetyMode.PublicationOnly),
+            sp.GetRequiredService<IAppState>()));
         services.AddSingleton<StatusSectionViewModel>(sp => new StatusSectionViewModel(
             sp.GetRequiredService<ISettingsProvider<AppSettings>>(),
             sp.GetRequiredService<ISettingsProvider<TimeSettings>>(),
