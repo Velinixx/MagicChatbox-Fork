@@ -65,17 +65,21 @@ internal static class EncryptionMethods
         {
             if (string.IsNullOrEmpty(source))
             {
-                destination = null;
+                destination = string.Empty;
                 return true;
             }
 
-            destination = isEncryption ? EncryptString(source) : DecryptString(source);
-            return destination != null;
+            string? result = isEncryption ? EncryptString(source) : DecryptString(source);
+            destination = result ?? string.Empty;
+
+            // Success is decided by the result, not by the coalesced destination:
+            // a value that legitimately round-trips to an empty string still succeeded.
+            return result != null;
         }
         catch (Exception ex)
         {
             Logging.WriteException(ex, MSGBox: false);
-            destination = null;
+            destination = string.Empty;
             return false;
         }
     }
