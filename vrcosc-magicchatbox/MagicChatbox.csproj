@@ -33,6 +33,14 @@
 		<Prefer32Bit>false</Prefer32Bit>
 		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 		<AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
+		<!-- Precompiles the app's own IL so the startup path is not JIT-compiled on every launch. -->
+		<PublishReadyToRun>true</PublishReadyToRun>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<!-- Nothing in the app consumes INotifyPropertyChanging, so the toolkit default only adds an
+		     event raise and an EventArgs allocation to every one of ~990 observable property setters. -->
+		<MvvmToolkitEnableINotifyPropertyChangingSupport>false</MvvmToolkitEnableINotifyPropertyChangingSupport>
 	</PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
