@@ -64,7 +64,11 @@ public class ComponentStatsModule : IModule
 
     private readonly ISettingsProvider<ComponentStatsSettings> _settingsProvider;
     public ComponentStatsSettings Settings => _settingsProvider.Value;
-    public void SaveSettings() => _settingsProvider.Save();
+    public void SaveSettings()
+    {
+        _settingsProvider.Save();
+        SaveComponentStats();
+    }
 
     public string Name => "ComponentStats";
     public bool IsEnabled { get; set; } = true;
