@@ -575,6 +575,7 @@ public class WeatherService : IWeatherService
             WeatherLocation? location = await GetLocationAsync().ConfigureAwait(false);
             if (location == null)
             {
+                ShowWeatherError(BuildLocationErrorMessage());
                 return;
             }
 
@@ -616,18 +617,15 @@ public class WeatherService : IWeatherService
         catch (Exception ex)
         {
             Logging.WriteException(ex, MSGBox: false);
-            if (!_weatherErrorShown)
+            string friendlyMsg = ex switch
             {
-                _weatherErrorShown = true;
-                string friendlyMsg = ex switch
-                {
-                    HttpRequestException => "Could not reach the weather service. Check your internet connection.",
-                    TaskCanceledException => "Weather request timed out. Will retry automatically.",
-                    _ => "Weather update failed. Check your city name in settings."
-                };
-                _toast?.Show("⛅ Weather Error", friendlyMsg, ToastType.Error, key: "weather-error");
-            }
+                HttpRequestException => "Could not reach the weather service. Check your internet connection.",
+                TaskCanceledException => "Weather request timed out. Will retry automatically.",
+                _ => "Weather update failed. Check your city name in settings."
+            };
+            ShowWeatherError(friendlyMsg);
         }
+
         finally
         {
             lock (SyncLock)
@@ -635,6 +633,30 @@ public class WeatherService : IWeatherService
                 _fetchInProgress = false;
             }
         }
+    }
+
+    private void ShowWeatherError(string message)
+    {
+        if (_weatherErrorShown)
+            return;
+
+        _weatherErrorShown = true;
+        _toast?.Show("⛅ Weather Error", message, ToastType.Error, key: "weather-error");
+    }
+
+    private string BuildLocationErrorMessage()
+    {
+        if (Settings.WeatherLocationMode == WeatherLocationMode.CustomCoordinates)
+            return "The weather coordinates are invalid. Check latitude and longitude in settings.";
+
+        if (Settings.WeatherLocationMode == WeatherLocationMode.IPBased &&
+            Settings.WeatherAllowIPLocation &&
+            _consentService.IsApproved(PrivacyHook.InternetAccess))
+        {
+            return "The weather service could not determine your location. Try a custom city instead.";
+        }
+
+        return "No weather location matched that city. Check the city name in settings.";
     }
 
     private async Task<WeatherLocation?> GetLocationAsync()
