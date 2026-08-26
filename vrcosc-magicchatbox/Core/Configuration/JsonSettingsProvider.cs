@@ -244,6 +244,10 @@ public sealed class JsonSettingsProvider<T> : ISettingsProvider<T>, IDisposable 
                     MSGBox: false);
                 NotifySaveFailed();
             }
+            else if (saved)
+            {
+                _saveFailureLogged = false;
+            }
         }
     }
 
