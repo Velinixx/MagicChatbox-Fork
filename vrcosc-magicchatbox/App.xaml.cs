@@ -162,7 +162,7 @@ namespace vrcosc_magicchatbox
                     Core.Diagnostics.PerfProbe.ReportDirectory =
                         Services.GetRequiredService<IEnvironmentService>().LogPath;
                     Core.Diagnostics.BindingErrorProbe.Start();
-                    Logging.WriteInfo("[Perf] Instrumentation enabled (-perf). Ctrl+Shift+F12 dumps a snapshot.");
+                    Logging.WriteInfo("[Perf] Instrumentation enabled (--perf). Ctrl+Shift+F12 dumps a snapshot.");
                 }
 
                 Logging.Initialize(
@@ -225,6 +225,11 @@ namespace vrcosc_magicchatbox
                         {
                             continue;
                         }
+
+                        if (Core.Diagnostics.PerfProbe.IsEnableArgument(arg))
+                        {
+                            continue;
+                        }
                         else
                         {
                             switch (arg)
@@ -266,8 +271,6 @@ namespace vrcosc_magicchatbox
                                     await Task.Run(() => updater.ClearBackUp());
                                     break;
                                 case SteamVrLaunchArgument:
-                                    break;
-                                case Core.Diagnostics.PerfProbe.EnableArgument:
                                     break;
                                 default:
                                     loadingWindow.CloseFromAnyThread();

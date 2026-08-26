@@ -39,7 +39,7 @@ public sealed class UiScenarioRunner
     public async Task<string> RunAsync()
     {
         if (!PerfProbe.IsEnabled)
-            return "[Scenario] needs -perf.\n";
+            return "[Scenario] needs --perf.\n";
 
         Line($"Scenario start. Profile data path: {AppDomain.CurrentDomain.FriendlyName}");
 

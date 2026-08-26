@@ -18,7 +18,8 @@ public static class PerfProbe
 {
     private const string EnableVariable = "MAGICCHATBOX_PERF";
 
-    public const string EnableArgument = "-perf";
+    public const string EnableArgument = "--perf";
+    public const string LegacyEnableArgument = "-perf";
 
     private static readonly ConcurrentDictionary<string, SampleSet> Samples = new(StringComparer.Ordinal);
     private static readonly ConcurrentQueue<string> Timeline = new();
@@ -40,13 +41,17 @@ public static class PerfProbe
                 return true;
 
             return Environment.GetCommandLineArgs()
-                .Any(a => string.Equals(a, EnableArgument, StringComparison.OrdinalIgnoreCase));
+                .Any(IsEnableArgument);
         }
         catch
         {
             return false;
         }
     }
+
+    public static bool IsEnableArgument(string? argument)
+        => string.Equals(argument, EnableArgument, StringComparison.OrdinalIgnoreCase) ||
+           string.Equals(argument, LegacyEnableArgument, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Times a block and records elapsed milliseconds plus bytes allocated on the calling thread.

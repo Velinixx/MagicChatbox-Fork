@@ -24,7 +24,7 @@ public static class NavigationBenchmark
         int rounds = 3)
     {
         if (!PerfProbe.IsEnabled)
-            return "[Perf] Navigation benchmark needs -perf.";
+            return "[Perf] Navigation benchmark needs --perf.";
 
         int startingPage = readPage();
         var results = new List<(int Page, double SwitchMs, long WorkingSetDeltaKb)>();

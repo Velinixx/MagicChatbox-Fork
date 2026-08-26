@@ -575,7 +575,7 @@ namespace vrcosc_magicchatbox
                 Reveal();
         }
 
-        /// <summary>Ctrl+Shift+F12 dumps a snapshot, Ctrl+Shift+F11 runs the navigation benchmark. -perf only.</summary>
+        /// <summary>Ctrl+Shift+F12 dumps a snapshot, Ctrl+Shift+F11 runs the navigation benchmark. --perf only.</summary>
         private async void OnPerfDumpRequested(object sender, KeyEventArgs e)
         {
             if (!Core.Diagnostics.PerfProbe.IsEnabled
