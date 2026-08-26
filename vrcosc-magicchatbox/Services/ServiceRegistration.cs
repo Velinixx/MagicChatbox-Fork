@@ -184,7 +184,8 @@ public static class ServiceRegistration
             sp.GetRequiredService<IStatusListService>(),
             sp.GetRequiredService<IMenuNavigationService>(),
             sp.GetRequiredService<ISettingsProvider<AppSettings>>(),
-            sp.GetRequiredService<Core.State.IUiDispatcher>()));
+            sp.GetRequiredService<Core.State.IUiDispatcher>(),
+            sp.GetRequiredService<Core.Toast.IToastService>()));
         services.AddSingleton<ChattingPageViewModel>(sp => new ChattingPageViewModel(
             sp.GetRequiredService<ChatStatusDisplayState>(),
             sp.GetRequiredService<IAppState>(),
