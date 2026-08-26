@@ -18,6 +18,7 @@ namespace vrcosc_magicchatbox.Services;
 public sealed partial class HardwareMonitorService : IHardwareMonitorService
 {
     private readonly object _lock = new();
+    private readonly object _nvidiaSmiQueryLock = new();
     private readonly LhmGpuSensorProvider _vendorGpu = new();
     private IReadOnlyList<string>? _gpuCache;
     private IReadOnlyList<GpuInfo>? _gpuInfoCache;
@@ -1064,35 +1065,38 @@ public sealed partial class HardwareMonitorService : IHardwareMonitorService
         if (!HasNvidiaAdapter())
             return Array.Empty<NvidiaSmiSample>();
 
-        lock (_lock)
+        lock (_nvidiaSmiQueryLock)
         {
-            if (_nvidiaSmiCache != null &&
-                DateTime.UtcNow - _nvidiaSmiCapturedAtUtc < NvidiaSmiSampleTtl)
+            lock (_lock)
             {
-                return _nvidiaSmiCache;
-            }
+                if (_nvidiaSmiCache != null &&
+                    DateTime.UtcNow - _nvidiaSmiCapturedAtUtc < NvidiaSmiSampleTtl)
+                {
+                    return _nvidiaSmiCache;
+                }
 
-            if (_nvidiaSmiUnavailable)
-                return Array.Empty<NvidiaSmiSample>();
-
-            if (_nvidiaSmiRetryAfterUtc != default)
-            {
-                if (DateTime.UtcNow < _nvidiaSmiRetryAfterUtc)
+                if (_nvidiaSmiUnavailable)
                     return Array.Empty<NvidiaSmiSample>();
 
-                _nvidiaSmiRetryAfterUtc = default;
-                _nvidiaSmiFailures = 0;
+                if (_nvidiaSmiRetryAfterUtc != default)
+                {
+                    if (DateTime.UtcNow < _nvidiaSmiRetryAfterUtc)
+                        return Array.Empty<NvidiaSmiSample>();
+
+                    _nvidiaSmiRetryAfterUtc = default;
+                    _nvidiaSmiFailures = 0;
+                }
             }
-        }
 
-        IReadOnlyList<NvidiaSmiSample> samples = QueryNvidiaSmiAsync().GetAwaiter().GetResult();
-        lock (_lock)
-        {
-            _nvidiaSmiCache = samples;
-            _nvidiaSmiCapturedAtUtc = DateTime.UtcNow;
-        }
+            IReadOnlyList<NvidiaSmiSample> samples = QueryNvidiaSmiAsync().GetAwaiter().GetResult();
+            lock (_lock)
+            {
+                _nvidiaSmiCache = samples;
+                _nvidiaSmiCapturedAtUtc = DateTime.UtcNow;
+            }
 
-        return samples;
+            return samples;
+        }
     }
 
     private async Task<IReadOnlyList<NvidiaSmiSample>> QueryNvidiaSmiAsync()
