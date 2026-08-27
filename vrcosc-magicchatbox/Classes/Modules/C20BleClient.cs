@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using vrcosc_magicchatbox.Classes.DataAndSecurity;
 using Windows.Devices.Bluetooth;
@@ -43,7 +44,7 @@ public sealed class C20BleClient : IDisposable
 
         if (device == null)
         {
-            Logging.WriteInfo("C20 BLE: Still could not find the watch even with a scan. Make sure it is awake and advertising (tap the screen), then retry.");
+            Logging.WriteInfo("C20 BLE: Still could not find the watch even with a scan. Close the bridge app if it's running, wake the watch (keep the screen on), then retry.");
             return false;
         }
 
@@ -203,20 +204,29 @@ public sealed class C20BleClient : IDisposable
             ScanningMode = BluetoothLEScanningMode.Active
         };
         var completion = new TaskCompletionSource<ulong>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var seen = new HashSet<string>();
+        int totalSeen = 0;
 
         watcher.Received += (_, eventArgs) =>
         {
-            if (completion.Task.IsCompleted)
-                return;
-
             var name = eventArgs.Advertisement.LocalName ?? string.Empty;
+            var mac = $"{eventArgs.BluetoothAddress:X12}";
+
+            lock (seen)
+            {
+                totalSeen++;
+                if (seen.Count < 6)
+                    seen.Add(name.Length > 0 ? $"{name} ({mac})" : mac);
+            }
+
             bool isMatch = eventArgs.BluetoothAddress == watchAddress ||
                            name.Contains("C20", StringComparison.OrdinalIgnoreCase) ||
                            name.Contains("C 20", StringComparison.OrdinalIgnoreCase);
-            if (isMatch)
+            if (isMatch && !completion.Task.IsCompleted)
                 completion.TrySetResult(eventArgs.BluetoothAddress);
         };
 
+        Logging.WriteInfo($"C20 BLE: Scanning for watch (0x{watchAddress:X12})...");
         watcher.Start();
         try
         {
@@ -224,8 +234,16 @@ public sealed class C20BleClient : IDisposable
             if (finished == completion.Task)
             {
                 var address = await completion.Task;
+                Logging.WriteInfo("C20 BLE: Watch advertisement matched!");
                 return await BluetoothLEDevice.FromBluetoothAddressAsync(address);
             }
+
+            string samples;
+            lock (seen)
+            {
+                samples = seen.Count == 0 ? "none" : string.Join(", ", seen);
+            }
+            Logging.WriteInfo($"C20 BLE: Scan saw {totalSeen} nearby device(s), no C 20. Samples: {samples}");
             return null;
         }
         catch (Exception ex)
