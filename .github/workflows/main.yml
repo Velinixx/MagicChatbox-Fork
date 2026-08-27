@@ -5,6 +5,7 @@ on:
     branches:
       - 'Pre-Master'
       - 'master'
+      - 'c20-v2'
     tags:
       - 'v*'
 
