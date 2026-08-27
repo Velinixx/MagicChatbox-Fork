@@ -113,6 +113,49 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Embedded BLE connection -->
+                <Border Style="{StaticResource OptionCardStyle}" Width="500">
+                    <StackPanel Margin="5">
+                        <TextBlock
+                            FontSize="15"
+                            Foreground="{StaticResource TextSectionHeaderBrush}"
+                            Text="Embedded BLE connection"
+                            TextWrapping="Wrap" />
+                        <CheckBox
+                            Margin="0,5,0,0"
+                            Content="Use embedded BLE (no bridge app needed)"
+                            IsChecked="{Binding ModuleSettings.EmbeddedBle, Mode=TwoWay}"
+                            Style="{DynamicResource SettingsCheckbox}" />
+                        <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                Foreground="{StaticResource TextLabelBrush}"
+                                Text="Watch MAC:"
+                                TextWrapping="Wrap" />
+                            <TextBox
+                                Width="130"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                FontFamily="Consolas"
+                                FontSize="11"
+                                Text="{Binding ModuleSettings.WatchAddress, Mode=TwoWay}" />
+                        </StackPanel>
+                        <TextBlock
+                            Margin="0,5,0,0"
+                            FontSize="10"
+                            Foreground="{StaticResource TextMutedBrush}"
+                            Text="Embedded mode connects to the C20 directly over Windows Bluetooth, with no bridge app running. Make sure Bluetooth is enabled and Windows is allowed to use it. If the watch will not connect, wake it up (tap the screen) or restart it."
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Margin="0,5,0,0"
+                            FontSize="10"
+                            Foreground="{StaticResource TextMutedBrush}"
+                            Text="This mode only works on Windows. For unlocking/monitoring tricks use the hr_bridge instead."
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
                 <!-- Heart Rate Display -->
                 <Border Style="{StaticResource OptionCardStyle}" Width="500">
                     <StackPanel Margin="5">
@@ -195,6 +238,15 @@
                             <Run
                                 FontWeight="Bold"
                                 Text="{Binding HeartRate, Mode=OneWay}" />
+                        </TextBlock>
+                        <TextBlock
+                            FontSize="12"
+                            Foreground="{StaticResource TextLabelBrush}"
+                            TextWrapping="Wrap">
+                            <Run Text="Battery: " />
+                            <Run
+                                FontWeight="Bold"
+                                Text="{Binding Battery, Mode=OneWay}" />
                         </TextBlock>
                     </StackPanel>
                 </Border>

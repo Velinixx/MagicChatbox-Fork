@@ -28,7 +28,9 @@ public partial class C20HeartRateModule : ObservableObject, IModule
     private readonly object _hrLock = new();
     private int _latestHR;
     private DateTime _lastHRUpdate = DateTime.MinValue;
+    private DateTime _lastBleAttempt = DateTime.MinValue;
     private System.Timers.Timer? _dataTimer;
+    private readonly C20BleClient _bleClient = new();
     private bool _disposed;
 
     private readonly IAppState _appState;
@@ -44,6 +46,9 @@ public partial class C20HeartRateModule : ObservableObject, IModule
 
     [ObservableProperty]
     private int heartRate;
+
+    [ObservableProperty]
+    private int batteryLevel;
 
     public string Name => "C20HeartRate";
     public bool IsEnabled { get; set; } = true;
@@ -77,6 +82,10 @@ public partial class C20HeartRateModule : ObservableObject, IModule
         _integrationSettings = integrationSettings;
         _dispatcher = dispatcher;
         _settingsProvider = settingsProvider;
+
+        _bleClient.HeartRateReceived += OnBleHeartRate;
+        _bleClient.ConnectionChanged += OnBleConnectionChanged;
+        _bleClient.BatteryRead += b => _dispatcher.Invoke(() => BatteryLevel = b);
 
         _dataTimer = new System.Timers.Timer
         {
@@ -187,6 +196,31 @@ public partial class C20HeartRateModule : ObservableObject, IModule
             _cts = new CancellationTokenSource();
             await _dispatcher.InvokeAsync(() => DeviceConnected = false);
 
+            if (Settings.EmbeddedBle)
+            {
+                bool ok = false;
+                try
+                {
+                    ok = await _bleClient.StartAsync(Settings.WatchAddress);
+                }
+                catch (Exception ex)
+                {
+                    Logging.WriteInfo($"C20: BLE start error: {ex.Message}");
+                }
+
+                if (!ok)
+                {
+                    Logging.WriteInfo("C20: Could not connect to the watch over BLE. Make sure it is advertising (tap the screen), Bluetooth is on, and the watch MAC is correct.");
+                    _isMonitoringStarted = false;
+                    _lastBleAttempt = DateTime.Now;
+                    return;
+                }
+
+                _lastBleAttempt = DateTime.MinValue;
+                _dataTimer?.Start();
+                return;
+            }
+
             LaunchBridge();
 
             for (var i = 0; i < 10; i++)
@@ -243,6 +277,11 @@ public partial class C20HeartRateModule : ObservableObject, IModule
                     await _dispatcher.InvokeAsync(() => DeviceConnected = connected);
                 }
 
+                if (data.TryGetValue("battery", out var batteryObj))
+                {
+                    await _dispatcher.InvokeAsync(() => BatteryLevel = Convert.ToInt32(batteryObj));
+                }
+
                 if (data.TryGetValue("bpm", out var bpmObj))
                 {
                     int bpm = Convert.ToInt32(bpmObj);
@@ -278,6 +317,19 @@ public partial class C20HeartRateModule : ObservableObject, IModule
             return;
         }
 
+        if (Settings.EmbeddedBle)
+        {
+            if (_bleClient.IsConnected)
+            {
+                PushHrIfChanged();
+                return;
+            }
+
+            if (!_isMonitoringStarted && DateTime.Now.Subtract(_lastBleAttempt).TotalSeconds >= 3)
+                _ = StartMonitoringAsync();
+            return;
+        }
+
         if (_tcpClient == null || !_tcpClient.Connected)
         {
             _dispatcher.Invoke(() => DeviceConnected = false);
@@ -286,6 +338,37 @@ public partial class C20HeartRateModule : ObservableObject, IModule
             return;
         }
 
+        PushHrIfChanged();
+    }
+
+    private void OnBleHeartRate(int bpm)
+    {
+        if (bpm <= 0) return;
+
+        lock (_hrLock)
+        {
+            _latestHR = bpm;
+            _lastHRUpdate = DateTime.Now;
+            _heartRateHistory.Enqueue(bpm);
+            while (_heartRateHistory.Count > Settings.SmoothHeartRateTimeSpan)
+                _heartRateHistory.Dequeue();
+        }
+
+        PushHrIfChanged();
+    }
+
+    private void OnBleConnectionChanged(bool connected)
+    {
+        _dispatcher.Invoke(() => DeviceConnected = connected);
+        if (!connected)
+        {
+            _isMonitoringStarted = false;
+            _lastBleAttempt = DateTime.Now;
+        }
+    }
+
+    private void PushHrIfChanged()
+    {
         lock (_hrLock)
         {
             int hr;
@@ -329,6 +412,7 @@ public partial class C20HeartRateModule : ObservableObject, IModule
     private void StopMonitoring()
     {
         _dataTimer?.Stop();
+        _bleClient.Stop();
 
         if (_tcpReader != null)
         {
@@ -371,5 +455,6 @@ public partial class C20HeartRateModule : ObservableObject, IModule
         _disposed = true;
         StopMonitoring();
         _dataTimer?.Dispose();
+        _bleClient.Dispose();
     }
 }

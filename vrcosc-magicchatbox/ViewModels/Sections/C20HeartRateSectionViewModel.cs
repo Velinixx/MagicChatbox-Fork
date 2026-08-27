@@ -34,6 +34,16 @@ public partial class C20HeartRateSectionViewModel : ObservableObject
         }
     }
 
+    public string Battery
+    {
+        get
+        {
+            var module = _moduleHost.Value.C20HeartRate;
+            if (module == null) return "--";
+            return module.BatteryLevel > 0 ? $"{module.BatteryLevel}%" : "--";
+        }
+    }
+
     public C20HeartRateSectionViewModel(
         Lazy<IModuleHost> moduleHost,
         ISettingsProvider<AppSettings> appSettingsProvider)
@@ -49,10 +59,11 @@ public partial class C20HeartRateSectionViewModel : ObservableObject
 
     private void OnModulePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(C20HeartRateModule.DeviceConnected) or nameof(C20HeartRateModule.HeartRate))
+        if (e.PropertyName is nameof(C20HeartRateModule.DeviceConnected) or nameof(C20HeartRateModule.HeartRate) or nameof(C20HeartRateModule.BatteryLevel))
         {
             OnPropertyChanged(nameof(HasDevice));
             OnPropertyChanged(nameof(HeartRate));
+            OnPropertyChanged(nameof(Battery));
         }
     }
 }
