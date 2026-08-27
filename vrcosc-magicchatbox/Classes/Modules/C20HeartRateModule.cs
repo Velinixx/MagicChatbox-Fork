@@ -164,6 +164,19 @@ public partial class C20HeartRateModule : ObservableObject, IModule
         }
     }
 
+    private void CheckMonitoringConditions()
+    {
+        if (ShouldStartMonitoring())
+        {
+            if (!_isMonitoringStarted)
+                _ = StartMonitoringAsync();
+        }
+        else
+        {
+            StopMonitoring();
+        }
+    }
+
     private async Task StartMonitoringAsync()
     {
         if (_isMonitoringStarted) return;
