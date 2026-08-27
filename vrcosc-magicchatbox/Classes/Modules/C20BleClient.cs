@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using vrcosc_magicchatbox.Classes.DataAndSecurity;
 using Windows.Devices.Bluetooth;
+using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
-using Windows.Devices.Enumeration;
 using Windows.Storage.Streams;
 
 namespace vrcosc_magicchatbox.Classes.Modules;
@@ -38,8 +37,8 @@ public sealed class C20BleClient : IDisposable
         var device = await BluetoothLEDevice.FromBluetoothAddressAsync(watchAddress);
         if (device == null)
         {
-            Logging.WriteInfo($"C20 BLE: No watch in the BLE cache at {address} — scanning for it for a few seconds...");
-            device = await ScanForWatchAsync(watchAddress, address);
+            Logging.WriteInfo($"C20 BLE: No watch in the BLE cache at {address} — actively scanning for its advertisements for a few seconds...");
+            device = await ScanForWatchAsync(watchAddress);
         }
 
         if (device == null)
@@ -197,15 +196,25 @@ public sealed class C20BleClient : IDisposable
         HeartRateReceived?.Invoke(hr);
     }
 
-    private static async Task<BluetoothLEDevice?> ScanForWatchAsync(ulong watchAddress, string watchAddressString)
+    private static async Task<BluetoothLEDevice?> ScanForWatchAsync(ulong watchAddress)
     {
-        var watcher = DeviceInformation.CreateWatcher(BluetoothLEDevice.GetDeviceSelector());
-        var completion = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        watcher.Added += (_, info) =>
+        var watcher = new BluetoothLEAdvertisementWatcher
         {
-            if (IsWatchDevice(info, watchAddress, watchAddressString) && !completion.Task.IsCompleted)
-                completion.TrySetResult(info.Id);
+            ScanningMode = BluetoothLEScanningMode.Active
+        };
+        var completion = new TaskCompletionSource<ulong>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        watcher.Received += (_, eventArgs) =>
+        {
+            if (completion.Task.IsCompleted)
+                return;
+
+            var name = eventArgs.Advertisement.LocalName ?? string.Empty;
+            bool isMatch = eventArgs.BluetoothAddress == watchAddress ||
+                           name.Contains("C20", StringComparison.OrdinalIgnoreCase) ||
+                           name.Contains("C 20", StringComparison.OrdinalIgnoreCase);
+            if (isMatch)
+                completion.TrySetResult(eventArgs.BluetoothAddress);
         };
 
         watcher.Start();
@@ -213,51 +222,21 @@ public sealed class C20BleClient : IDisposable
         {
             var finished = await Task.WhenAny(completion.Task, Task.Delay(12000));
             if (finished == completion.Task)
-                return await BluetoothLEDevice.FromIdAsync(await completion.Task);
+            {
+                var address = await completion.Task;
+                return await BluetoothLEDevice.FromBluetoothAddressAsync(address);
+            }
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logging.WriteInfo($"C20 BLE: Scan failed: {ex.Message}");
             return null;
         }
         finally
         {
             watcher.Stop();
         }
-    }
-
-    private static bool IsWatchDevice(DeviceInformation info, ulong watchAddress, string watchAddressString)
-    {
-        var name = info.Name ?? string.Empty;
-        if (name.Contains("C20", StringComparison.OrdinalIgnoreCase) ||
-            name.Contains("C 20", StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        var displayHex = watchAddressString.Replace(":", "").Replace("-", "");
-        var reversedHex = ReverseHexBytes(displayHex);
-
-        var id = info.Id ?? string.Empty;
-        var marker = id.IndexOf("DEV_", StringComparison.OrdinalIgnoreCase);
-        if (marker < 0)
-            return false;
-
-        var token = string.Empty;
-        foreach (var ch in id.Substring(marker + 4))
-        {
-            if (Uri.IsHexDigit(ch) && token.Length < displayHex.Length)
-                token += ch;
-            else
-                break;
-        }
-
-        return token.Length >= 6 &&
-               (token.Equals(displayHex, StringComparison.OrdinalIgnoreCase) ||
-                token.Equals(reversedHex, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private static string ReverseHexBytes(string hex)
-    {
-        var pairs = new List<string>();
-        for (int i = 0; i < hex.Length - 1; i += 2)
-            pairs.Add(hex.Substring(i, 2));
-        pairs.Reverse();
-        return string.Join("", pairs);
     }
 
     private async void ReadBattery()
@@ -301,15 +280,15 @@ public sealed class C20BleClient : IDisposable
 
         try
         {
-            ulong result = 0;
-            for (int i = 0; i < 6; i++)
-                result |= (ulong)Convert.ToByte(parts[i], 16) << (8 * i);
-            return result;
+            var hex = string.Concat(parts);
+            if (ulong.TryParse(hex, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out var result) && result > 0)
+                return result;
         }
         catch
         {
-            return 0;
         }
+
+        return 0;
     }
 
     public void Dispose()
