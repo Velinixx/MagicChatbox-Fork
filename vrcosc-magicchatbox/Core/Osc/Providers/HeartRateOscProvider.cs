@@ -27,13 +27,24 @@ public sealed class HeartRateOscProvider : IOscProvider
     public int Priority => 40;
 
     public bool IsEnabledForCurrentMode(bool isVR)
-        => _intgr.IntgrHeartRate
-           && _appState.PulsoidAuthConnected
-           && (isVR ? _intgr.IntgrHeartRate_VR : _intgr.IntgrHeartRate_DESKTOP);
+    {
+        bool pulsoidActive = _intgr.IntgrHeartRate
+            && _appState.PulsoidAuthConnected
+            && (isVR ? _intgr.IntgrHeartRate_VR : _intgr.IntgrHeartRate_DESKTOP);
+
+        bool c20Active = _intgr.IntgrC20HeartRate
+            && (isVR ? _intgr.IntgrC20HeartRate_VR : _intgr.IntgrC20HeartRate_DESKTOP);
+
+        return pulsoidActive || c20Active;
+    }
 
     public OscSegment? TryBuild(OscBuildContext context)
     {
-        string output = _modules.Value.Pulsoid.GetHeartRateString();
+        string output = _modules.Value.Pulsoid?.GetHeartRateString() ?? string.Empty;
+
+        if (string.IsNullOrEmpty(output))
+            output = _modules.Value.C20HeartRate?.GetHeartRateString() ?? string.Empty;
+
         if (string.IsNullOrEmpty(output)) return null;
 
         return new OscSegment { Text = output };

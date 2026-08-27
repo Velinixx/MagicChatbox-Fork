@@ -22,6 +22,7 @@ public interface IModuleHost : INotifyPropertyChanged
     vrcosc_magicchatbox.Classes.Modules.Lyrics.LyricsModule Lyrics { get; set; }
     WhisperModule Whisper { get; set; }
     AfkModule Afk { get; set; }
+    C20HeartRateModule? C20HeartRate { get; set; }
 
     IReadOnlyList<vrcosc_magicchatbox.Services.IModule> AllModules { get; }
 

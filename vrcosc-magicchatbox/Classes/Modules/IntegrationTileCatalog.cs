@@ -26,6 +26,9 @@ public static class IntegrationTileCatalog
         new("HeartRate", "HeartRateItem", "Heart rate",
             nameof(IntegrationSettings.IntgrHeartRate), false, (i, _) => i.IntgrHeartRate),
 
+        new("C20HeartRate", "C20HeartRateItem", "C20 watch heart rate",
+            nameof(IntegrationSettings.IntgrC20HeartRate), false, (i, _) => i.IntgrC20HeartRate),
+
         new("TrackerBattery", "TrackerBatteryItem", "VR gear battery",
             nameof(IntegrationSettings.IntgrTrackerBattery), false, (i, _) => i.IntgrTrackerBattery),
 

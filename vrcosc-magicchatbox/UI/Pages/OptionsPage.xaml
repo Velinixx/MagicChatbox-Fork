@@ -162,6 +162,16 @@
             </ContentControl>
 
             <ContentControl
+                x:Name="OptionsWrapper_C20HeartRate"
+                Style="{StaticResource OptionSectionWithResetStyle}"
+                Tag="c20-heart-rate">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource OptionSectionPlaceholderTitle}" Text="C20 heart rate options" />
+                    <TextBlock Style="{StaticResource OptionSectionPlaceholderStatus}" Text="Loading…" />
+                </StackPanel>
+            </ContentControl>
+
+            <ContentControl
                 x:Name="OptionsWrapper_ComponentStats"
                 Style="{StaticResource OptionSectionWithResetStyle}"
                 Tag="component-stats">

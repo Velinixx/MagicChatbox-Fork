@@ -32,6 +32,7 @@ public sealed class OptionsSectionResetService : IOptionsSectionResetService
     private readonly ISettingsProvider<WindowActivitySettings> _windowActivity;
     private readonly ISettingsProvider<VrcLogSettings> _vrcLog;
     private readonly ISettingsProvider<PulsoidModuleSettings> _pulsoid;
+    private readonly ISettingsProvider<C20Settings> _c20;
     private readonly ISettingsProvider<OscSettings> _osc;
     private readonly ISettingsProvider<PrivacySettings> _privacy;
     private readonly ISettingsProvider<VoicemodSettings> _voicemod;
@@ -60,6 +61,7 @@ public sealed class OptionsSectionResetService : IOptionsSectionResetService
         ISettingsProvider<WindowActivitySettings> windowActivity,
         ISettingsProvider<VrcLogSettings> vrcLog,
         ISettingsProvider<PulsoidModuleSettings> pulsoid,
+        ISettingsProvider<C20Settings> c20,
         ISettingsProvider<OscSettings> osc,
         ISettingsProvider<PrivacySettings> privacy,
         ISettingsProvider<VoicemodSettings> voicemod,
@@ -87,6 +89,7 @@ public sealed class OptionsSectionResetService : IOptionsSectionResetService
         _windowActivity = windowActivity;
         _vrcLog = vrcLog;
         _pulsoid = pulsoid;
+        _c20 = c20;
         _osc = osc;
         _privacy = privacy;
         _voicemod = voicemod;
@@ -135,6 +138,14 @@ public sealed class OptionsSectionResetService : IOptionsSectionResetService
                             nameof(IntegrationSettings.IntgrHeartRate_DESKTOP),
                             nameof(IntegrationSettings.IntgrHeartRate_OSC));
                     })
+                    .ConfigureAwait(false);
+
+            case "c20-heart-rate":
+                return await ResetModuleSectionAsync(
+                    "C20 Heart Rate",
+                    _moduleHost.Value.C20HeartRate,
+                    () => _reset.ResetAll(_c20)
+                        + ResetIntegration(nameof(IntegrationSettings.IntgrC20HeartRate_VR), nameof(IntegrationSettings.IntgrC20HeartRate_DESKTOP), nameof(IntegrationSettings.IntgrC20HeartRate_OSC)))
                     .ConfigureAwait(false);
 
             case "time":

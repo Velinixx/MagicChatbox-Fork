@@ -67,6 +67,7 @@ public class ModuleBootstrapper
     private readonly IVoicemodClientKeyProvider _voicemodClientKeyProvider;
     private readonly IVoicemodSocketFactory _voicemodSocketFactory;
     private readonly IVoicemodArtworkCache _voicemodArtwork;
+    private readonly ISettingsProvider<C20Settings> _c20SettingsProvider;
     private readonly TaskCompletionSource _startupComplete = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly object _teardownLock = new();
     private List<Action> _teardownActions = new();
@@ -147,7 +148,8 @@ public class ModuleBootstrapper
         VoicemodDisplayState voicemodDisplay,
         IVoicemodClientKeyProvider voicemodClientKeyProvider,
         IVoicemodSocketFactory voicemodSocketFactory,
-        IVoicemodArtworkCache voicemodArtwork)
+        IVoicemodArtworkCache voicemodArtwork,
+        ISettingsProvider<C20Settings> c20SettingsProvider)
     {
         _host = host;
         _appState = appState;
@@ -192,6 +194,7 @@ public class ModuleBootstrapper
         _voicemodClientKeyProvider = voicemodClientKeyProvider;
         _voicemodSocketFactory = voicemodSocketFactory;
         _voicemodArtwork = voicemodArtwork;
+        _c20SettingsProvider = c20SettingsProvider;
     }
 
     public Task RegisterComponentStatsAsync(ComponentStatsModule statsModule)
@@ -312,6 +315,13 @@ public class ModuleBootstrapper
             _dispatcher,
             _consentService,
             _toast));
+
+        var c20 = await CreateRuntimeModuleAsync("C20HeartRate", () => new C20HeartRateModule(
+            _appState,
+            _oscSender,
+            integrationSettings,
+            _dispatcher,
+            _c20SettingsProvider));
 
         await _dispatcher.InvokeAsync(() =>
         {
@@ -449,6 +459,14 @@ public class ModuleBootstrapper
                 _host.RegisterModule(vrcRadar);
                 integrationSettings.PropertyChanged += vrcRadar.PropertyChangedHandler;
                 TrackSubscription(() => integrationSettings.PropertyChanged -= vrcRadar.PropertyChangedHandler);
+            }
+
+            if (c20 != null)
+            {
+                _host.C20HeartRate = c20;
+                _host.RegisterModule(c20);
+                integrationSettings.PropertyChanged += c20.PropertyChangedHandler;
+                TrackSubscription(() => integrationSettings.PropertyChanged -= c20.PropertyChangedHandler);
             }
 
             if (vrcRadar != null)

@@ -81,6 +81,11 @@ public partial class IntegrationSettings : VersionedSettings
     [ObservableProperty] private bool _intgrVrcRadar_VR = true;
     [ObservableProperty] private bool _intgrVrcRadar_DESKTOP = true;
 
+    [ObservableProperty] private bool _intgrC20HeartRate = false;
+    [ObservableProperty] private bool _intgrC20HeartRate_VR = true;
+    [ObservableProperty] private bool _intgrC20HeartRate_DESKTOP = true;
+    [ObservableProperty] private bool _intgrC20HeartRate_OSC = true;
+
     [ObservableProperty]
     [property: JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     private ObservableCollection<string> _savedSortOrder = new(IntegrationDisplayState.DefaultSortOrder);

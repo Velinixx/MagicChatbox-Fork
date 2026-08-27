@@ -30,6 +30,7 @@ public partial class ModuleHost : ObservableObject, IModuleHost
     [ObservableProperty] private vrcosc_magicchatbox.Classes.Modules.Lyrics.LyricsModule? _lyrics;
     [ObservableProperty] private WhisperModule? _whisper;
     [ObservableProperty] private AfkModule? _afk;
+    [ObservableProperty] private C20HeartRateModule? _c20HeartRate;
 
     public IReadOnlyList<IModule> AllModules
     {

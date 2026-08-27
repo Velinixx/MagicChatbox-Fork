@@ -105,6 +105,7 @@ namespace vrcosc_magicchatbox.UI.Pages
                 { "Status", StatusItem },
                 { "Window", WindowActivityItem },
                 { "HeartRate", HeartRateItem },
+                { "C20HeartRate", C20HeartRateItem },
                 { "TrackerBattery", TrackerBatteryItem },
                 { "VrPerformance", VrPerformanceItem },
                 { "Component", ComponentStatsItem },

@@ -109,6 +109,7 @@ public partial class OptionsPage : UserControl
         _realizer.Add("time", OptionsWrapper_Time, () => new TimeOptionsSection(), nameof(OptionsPageViewModel.TimeOptionsSection));
         _realizer.Add("weather", OptionsWrapper_Weather, () => new WeatherSection(), nameof(OptionsPageViewModel.WeatherSection));
         _realizer.Add("pulsoid", OptionsWrapper_Pulsoid, () => new PulsoidSection(), nameof(OptionsPageViewModel.PulsoidSection));
+        _realizer.Add("c20heartrate", OptionsWrapper_C20HeartRate, () => new C20HeartRateSection(), nameof(OptionsPageViewModel.C20HeartRateSection));
         _realizer.Add("componentstats", OptionsWrapper_ComponentStats, () => new ComponentStatsSection(), nameof(OptionsPageViewModel.ComponentStatsSection));
         _realizer.Add("networkstatistics", OptionsWrapper_NetworkStatistics, () => new NetworkStatisticsSection(), nameof(OptionsPageViewModel.NetworkStatisticsSection));
         _realizer.Add("windowactivity", OptionsWrapper_WindowActivity, () => new WindowActivitySection(), nameof(OptionsPageViewModel.WindowActivitySection));
@@ -136,6 +137,7 @@ public partial class OptionsPage : UserControl
             ["Settings_Status"] = OptionsWrapper_Status,
             ["Settings_VrcRadar"] = OptionsWrapper_VrcRadar,
             ["Settings_HeartRate"] = OptionsWrapper_Pulsoid,
+            ["Settings_C20HeartRate"] = OptionsWrapper_C20HeartRate,
             ["Settings_Time"] = OptionsWrapper_Time,
             ["Settings_Weather"] = OptionsWrapper_Weather,
             ["Settings_Twitch"] = OptionsWrapper_Twitch,

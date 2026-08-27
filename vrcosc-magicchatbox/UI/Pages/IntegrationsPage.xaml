@@ -989,6 +989,135 @@
                     </Grid>
                 </Border>
             </ListBoxItem>
+            <ListBoxItem Name="C20HeartRateItem" Opacity="{Binding IntegrationDisplay.C20HeartRateOpacity}">
+                <Border
+                    Margin="5,0,5,5"
+                    Background="{StaticResource TileSurfaceBrush}"
+                    CornerRadius="5"
+                    BorderBrush="#FF150C33"
+                    BorderThickness="1">
+                    <Grid Margin="3">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="62" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border
+                            Grid.Column="0"
+                            Width="3"
+                            Margin="-3,-3,0,-3"
+                            HorizontalAlignment="Left"
+                            CornerRadius="5,0,0,5"
+                            IsHitTestVisible="False">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="#1AFFFFFF" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IntegrationDisplay.LiveOutputKeys, Converter={StaticResource CollectionContainsConverter}, ConverterParameter=HeartRate}" Value="True">
+                                            <Setter Property="Background">
+                                                <Setter.Value>
+                                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                        <GradientStop Offset="0" Color="#3FE0D2" />
+                                                        <GradientStop Offset="1" Color="#B96BFF" />
+                                                    </LinearGradientBrush>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                        </Border>
+
+                        <Border
+                            Grid.Column="0"
+                            Width="50"
+                            Height="50"
+                            Margin="6,4,6,4"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Background="{StaticResource TileIconFrameBrush}"
+                            BorderBrush="{StaticResource TileIconFrameBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            SnapsToDevicePixels="True">
+                            <Grid Margin="4">
+                                <Image
+                                    RenderOptions.BitmapScalingMode="HighQuality"
+                                    Source="/Img/Icons/HeartRate_ico.png" />
+                            </Grid>
+                        </Border>
+                        <StackPanel
+                            Grid.Column="1"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Center">
+                            <Grid Margin="0,3,0,0" VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Style="{StaticResource TileTitleStyle}" Text="C20 Watch Heart Rate" />
+                                <StackPanel
+                                    Grid.Column="2"
+                                    HorizontalAlignment="Left"
+                                    Orientation="Horizontal">
+                                    <TextBlock
+                                        Margin="5,0,0,0"
+                                        VerticalAlignment="Center"
+                                        FontFamily="/Fonts/#Comfortaa"
+                                        FontSize="12"
+                                        Foreground="LightSeaGreen"
+                                        RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                        Text="Connected"
+                                        Visibility="{Binding Modules.C20HeartRate.DeviceConnected, Converter={StaticResource BoolToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged, FallbackValue=Collapsed}" />
+                                    <TextBlock
+                                        Margin="5,0,0,0"
+                                        VerticalAlignment="Center"
+                                        FontFamily="/Fonts/#Comfortaa"
+                                        FontSize="12"
+                                        Foreground="#ABA4B8"
+                                        RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                        Text="Disconnected"
+                                        Visibility="{Binding Modules.C20HeartRate.DeviceConnected, Converter={StaticResource InverseBoolToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged, FallbackValue=Visible}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Style="{StaticResource TileDescriptionStyle}" Text="Your C20 smartwatch's pulse via hr_bridge, live in the chatbox and on your avatar over OSC." />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Style="{StaticResource TileControlDeck}">
+                            <StackPanel Style="{StaticResource DeckOutputRow}">
+                                <ToggleButton
+                                    Content="OSC"
+                                    IsChecked="{Binding IntegrationSettings.IntgrC20HeartRate_OSC, Mode=TwoWay}"
+                                    Style="{StaticResource FeatureChip}"
+                                    ToolTip="OSC" />
+                                <ToggleButton IsChecked="{Binding IntegrationSettings.IntgrC20HeartRate_DESKTOP, Mode=TwoWay}" Style="{StaticResource RouteChipDesktop}" />
+                                <ToggleButton IsChecked="{Binding IntegrationSettings.IntgrC20HeartRate_VR, Mode=TwoWay}" Style="{StaticResource RouteChipVr}" />
+                            </StackPanel>
+                            <StackPanel Style="{StaticResource DeckChromeRow}">
+                                <Button
+                                    AutomationProperties.Name="Hide this tile"
+                                    Click="HideTile_Click"
+                                    Style="{StaticResource TileHideButton}"
+                                    ToolTip="Hide this tile from the list. The integration stays switched on." />
+                                <Button
+                                    Command="{Binding ActivateSettingCommand}"
+                                    CommandParameter="Settings_C20HeartRate"
+                                    Style="{StaticResource TileDoorButton}" />
+                            </StackPanel>
+                        </StackPanel>
+                        <CheckBox
+                            Grid.Column="3"
+                            Margin="5,0,5,0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Click="Update_Click"
+                            IsChecked="{Binding IntegrationSettings.IntgrC20HeartRate, Mode=TwoWay}"
+                            Style="{DynamicResource Switch}" />
+                    </Grid>
+                </Border>
+            </ListBoxItem>
             <ListBoxItem Name="TrackerBatteryItem" Opacity="{Binding IntegrationDisplay.TrackerBatteryOpacity}">
                 <Grid>
                     <Grid.RowDefinitions>

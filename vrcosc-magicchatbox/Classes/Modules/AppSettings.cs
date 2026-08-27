@@ -123,6 +123,7 @@ public partial class AppSettings : VersionedSettings
     [ObservableProperty] private bool _settings_VrPerformance = false;
     [ObservableProperty] private bool _settings_Lyrics = false;
     [ObservableProperty] private bool _settings_Voicemod = false;
+    [ObservableProperty] private bool _settings_C20HeartRate = false;
 
     [ObservableProperty] private bool _settings_Privacy = false;
 

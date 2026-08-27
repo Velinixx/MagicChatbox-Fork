@@ -13,7 +13,7 @@ public partial class IntegrationDisplayState : ObservableObject
 {
     public static readonly IReadOnlyList<string> DefaultSortOrder = new[]
     {
-        "Status", "Window", "Twitch", "TikTokLive", "Discord", "Spotify", "VrcRadar", "HeartRate", "Component",
+        "Status", "Window", "Twitch", "TikTokLive", "Discord", "Spotify", "VrcRadar", "HeartRate", "C20HeartRate", "Component",
         "VrPerformance", "TrackerBattery", "Network", "Weather", "Time", "Soundpad",
         "Voicemod", "MediaLink", "Lyrics"
     };
@@ -134,6 +134,7 @@ public partial class IntegrationDisplayState : ObservableObject
     [ObservableProperty] private string _soundpadOpacity = "1";
     [ObservableProperty] private string _voicemodOpacity = "1";
     [ObservableProperty] private string _mediaLinkOpacity = "1";
+    [ObservableProperty] private string _c20HeartRateOpacity = "1";
 
     [ObservableProperty] private IReadOnlyCollection<string> _liveOutputKeys = Array.Empty<string>();
 
@@ -188,6 +189,7 @@ public partial class IntegrationDisplayState : ObservableObject
             case "Voicemod": VoicemodOpacity = opacity; break;
             case "MediaLink": MediaLinkOpacity = opacity; break;
             case "VrPerformance": VrPerformanceOpacity = opacity; break;
+            case "C20HeartRate": C20HeartRateOpacity = opacity; break;
         }
     }
 
@@ -210,5 +212,6 @@ public partial class IntegrationDisplayState : ObservableObject
         VoicemodOpacity = "1";
         MediaLinkOpacity = "1";
         VrPerformanceOpacity = "1";
+        C20HeartRateOpacity = "1";
     }
 }

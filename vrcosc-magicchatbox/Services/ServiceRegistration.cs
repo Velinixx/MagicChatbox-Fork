@@ -294,6 +294,9 @@ public static class ServiceRegistration
             sp.GetRequiredService<PulsoidDisplayState>(),
             sp.GetRequiredService<INavigationService>(),
             sp.GetRequiredService<IToastService>()));
+        services.AddSingleton<C20HeartRateSectionViewModel>(sp => new C20HeartRateSectionViewModel(
+            new Lazy<IModuleHost>(() => sp.GetRequiredService<IModuleHost>()),
+            sp.GetRequiredService<ISettingsProvider<AppSettings>>()));
         services.AddSingleton<OpenAISectionViewModel>(sp => new OpenAISectionViewModel(
             sp.GetRequiredService<ISettingsProvider<OpenAISettings>>(),
             sp.GetRequiredService<OpenAIDisplayState>(),
@@ -367,9 +370,10 @@ public static class ServiceRegistration
             sp.GetRequiredService<TrackerBatterySectionViewModel>(),
             sp.GetRequiredService<VrPerformanceSectionViewModel>(),
             sp.GetRequiredService<LyricsSectionViewModel>(),
-            sp.GetRequiredService<PulsoidSectionViewModel>(),
-            sp.GetRequiredService<OpenAISectionViewModel>(),
-            sp.GetRequiredService<TtsSectionViewModel>(),
+sp.GetRequiredService<PulsoidSectionViewModel>(),
+             sp.GetRequiredService<C20HeartRateSectionViewModel>(),
+             sp.GetRequiredService<OpenAISectionViewModel>(),
+             sp.GetRequiredService<TtsSectionViewModel>(),
             sp.GetRequiredService<TimeOptionsSectionViewModel>(),
             sp.GetRequiredService<NetworkStatisticsSectionViewModel>(),
             sp.GetRequiredService<ChattingOptionsSectionViewModel>(),

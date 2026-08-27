@@ -33,6 +33,7 @@ namespace vrcosc_magicchatbox.ViewModels
         public VrPerformanceSectionViewModel VrPerformanceSection { get; }
         public LyricsSectionViewModel LyricsSection { get; }
         public PulsoidSectionViewModel PulsoidSection { get; }
+        public C20HeartRateSectionViewModel C20HeartRateSection { get; }
         public OpenAISectionViewModel OpenAISection { get; }
         public TtsSectionViewModel TtsSection { get; }
         public TimeOptionsSectionViewModel TimeOptionsSection { get; }
@@ -65,6 +66,7 @@ namespace vrcosc_magicchatbox.ViewModels
             VrPerformanceSectionViewModel vrPerformanceSection,
             LyricsSectionViewModel lyricsSection,
             PulsoidSectionViewModel pulsoidSection,
+            C20HeartRateSectionViewModel c20HeartRateSection,
             OpenAISectionViewModel openAISection,
             TtsSectionViewModel ttsSection,
             TimeOptionsSectionViewModel timeOptionsSection,
@@ -96,6 +98,7 @@ namespace vrcosc_magicchatbox.ViewModels
             VrPerformanceSection = vrPerformanceSection;
             LyricsSection = lyricsSection;
             PulsoidSection = pulsoidSection;
+            C20HeartRateSection = c20HeartRateSection;
             OpenAISection = openAISection;
             TtsSection = ttsSection;
             TimeOptionsSection = timeOptionsSection;
