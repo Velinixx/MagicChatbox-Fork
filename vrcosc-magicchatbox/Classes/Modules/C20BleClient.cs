@@ -21,8 +21,14 @@ public sealed class C20BleClient : IDisposable
     private GattSession? _session;
     private GattCharacteristic? _hrCharacteristic;
     private GattCharacteristic? _batteryCharacteristic;
+    private GattCharacteristic? _fee2Characteristic;
     private System.Timers.Timer? _batteryTimer;
+    private CancellationTokenSource? _exerciseCts;
+    private bool _hasHrReading;
     private bool _disposed;
+
+    private static readonly Guid FeeAServiceGuid = new Guid("0000feea-0000-1000-8000-00805f9b34fb");
+    private static readonly Guid Fee2CharGuid = new Guid("0000fee2-0000-1000-8000-00805f9b34fb");
 
     public async Task<bool> StartAsync(string address)
     {
@@ -103,6 +109,18 @@ public sealed class C20BleClient : IDisposable
                         _batteryCharacteristic = c;
                 }
             }
+            else if (service.Uuid == FeeAServiceGuid)
+            {
+                var feeaChars = await service.GetCharacteristicsAsync();
+                if (feeaChars.Status != GattCommunicationStatus.Success)
+                    continue;
+
+                foreach (var c in feeaChars.Characteristics)
+                {
+                    if (c.Uuid == Fee2CharGuid)
+                        _fee2Characteristic = c;
+                }
+            }
         }
 
         if (_hrCharacteristic == null)
@@ -111,6 +129,8 @@ public sealed class C20BleClient : IDisposable
             return false;
         }
 
+        _hasHrReading = false;
+        _ = StartExerciseModeLoopAsync();
         IsConnected = true;
         ConnectionChanged?.Invoke(true);
 
@@ -133,6 +153,13 @@ public sealed class C20BleClient : IDisposable
             _batteryTimer.Stop();
             _batteryTimer.Dispose();
             _batteryTimer = null;
+        }
+
+        if (_exerciseCts != null)
+        {
+            _exerciseCts.Cancel();
+            _exerciseCts.Dispose();
+            _exerciseCts = null;
         }
 
         if (_hrCharacteristic != null)
@@ -166,6 +193,61 @@ public sealed class C20BleClient : IDisposable
         }
     }
 
+    private async Task StartExerciseModeLoopAsync()
+    {
+        if (_fee2Characteristic == null)
+        {
+            Logging.WriteInfo("C20 BLE: Watch has no 0xFEE2 write characteristic — exercise mode must be started manually on the watch.");
+            return;
+        }
+
+        _exerciseCts?.Cancel();
+        _exerciseCts = new CancellationTokenSource();
+        var ct = _exerciseCts.Token;
+
+        for (var i = 0; i < 9; i++)
+        {
+            if (_hasHrReading || ct.IsCancellationRequested) return;
+
+            await WritePacketAsync(0x68, new byte[] { 0x00 });
+            await WritePacketAsync(0x1F, new byte[] { 0x06 });
+
+            if (i == 0)
+                Logging.WriteInfo("C20 BLE: Sent exercise-mode start (0x68 0x00, 0x1F 0x06) to the watch.");
+            else
+                Logging.WriteInfo($"C20 BLE: Exercise-mode retry {i + 1} — still waiting for the first HR notification.");
+
+            try
+            {
+                await Task.Delay(10000, ct);
+            }
+            catch (TaskCanceledException)
+            {
+                return;
+            }
+        }
+
+        if (!_hasHrReading)
+            Logging.WriteInfo("C20 BLE: No HR yet after exercise-mode retries. If the watch stays silent, start exercise mode on the watch itself.");
+    }
+
+    private async Task WritePacketAsync(byte cmd, byte[] payload)
+    {
+        if (_fee2Characteristic == null) return;
+
+        try
+        {
+            var writer = new DataWriter();
+            writer.WriteBytes(new byte[] { 0xFE, 0xEA, 0x10, (byte)(payload.Length + 2), cmd });
+            if (payload.Length > 0)
+                writer.WriteBytes(payload);
+            await _fee2Characteristic.WriteValueAsync(writer.DetachBuffer(), GattWriteOption.WriteWithoutResponse);
+        }
+        catch
+        {
+        }
+    }
+
     private void OnSessionStatusChanged(GattSession sender, GattSessionStatusChangedEventArgs args)
     {
         bool connected = args.Status == GattSessionStatus.Active;
@@ -195,6 +277,7 @@ public sealed class C20BleClient : IDisposable
         }
 
         HeartRateReceived?.Invoke(hr);
+        _hasHrReading = true;
     }
 
     private static async Task<BluetoothLEDevice?> ScanForWatchAsync(ulong watchAddress)

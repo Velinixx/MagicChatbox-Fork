@@ -10,6 +10,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using vrcosc_magicchatbox.Classes.DataAndSecurity;
+using vrcosc_magicchatbox.Classes.Utilities;
 using vrcosc_magicchatbox.Core.Configuration;
 using vrcosc_magicchatbox.Core.Services;
 using vrcosc_magicchatbox.Core.State;
@@ -30,6 +31,8 @@ public partial class C20HeartRateModule : ObservableObject, IModule
     private DateTime _lastHRUpdate = DateTime.MinValue;
     private DateTime _lastBleAttempt = DateTime.MinValue;
     private DateTime _lastBleFailureLog = DateTime.MinValue;
+    private int _sessionMinHR;
+    private int _sessionMaxHR;
     private System.Timers.Timer? _dataTimer;
     private readonly C20BleClient _bleClient = new();
     private bool _disposed;
@@ -114,6 +117,9 @@ public partial class C20HeartRateModule : ObservableObject, IModule
                 if (avg > 0 && avg != hr)
                     result = $"{icon} {avg}{bpm}";
             }
+
+            if (_sessionMinHR > 0 && _sessionMaxHR >= _sessionMinHR)
+                result += $" | {_sessionMaxHR} {TextUtilities.TransformToSuperscript("max")} | {_sessionMinHR} {TextUtilities.TransformToSuperscript("min")}";
 
             return result;
         }
@@ -222,6 +228,7 @@ public partial class C20HeartRateModule : ObservableObject, IModule
                 }
 
                 _lastBleAttempt = DateTime.MinValue;
+                ResetHrSession();
                 _dataTimer?.Start();
                 return;
             }
@@ -253,6 +260,7 @@ public partial class C20HeartRateModule : ObservableObject, IModule
 
             await _dispatcher.InvokeAsync(() => DeviceConnected = true);
             Logging.WriteInfo($"C20: Connected to hr_bridge on port {Settings.TcpPort}!");
+            ResetHrSession();
             _dataTimer?.Start();
 
             _ = ReadTcpLoopAsync();
@@ -296,6 +304,7 @@ public partial class C20HeartRateModule : ObservableObject, IModule
                         {
                             _latestHR = bpm;
                             _lastHRUpdate = DateTime.Now;
+                            TrackSessionMinMax(bpm);
                             _heartRateHistory.Enqueue(bpm);
                             while (_heartRateHistory.Count > Settings.SmoothHeartRateTimeSpan)
                                 _heartRateHistory.Dequeue();
@@ -354,6 +363,7 @@ public partial class C20HeartRateModule : ObservableObject, IModule
         {
             _latestHR = bpm;
             _lastHRUpdate = DateTime.Now;
+            TrackSessionMinMax(bpm);
             _heartRateHistory.Enqueue(bpm);
             while (_heartRateHistory.Count > Settings.SmoothHeartRateTimeSpan)
                 _heartRateHistory.Dequeue();
@@ -370,6 +380,23 @@ public partial class C20HeartRateModule : ObservableObject, IModule
             _isMonitoringStarted = false;
             _lastBleAttempt = DateTime.Now;
         }
+    }
+
+    private void ResetHrSession()
+    {
+        lock (_hrLock)
+        {
+            _sessionMinHR = 0;
+            _sessionMaxHR = 0;
+        }
+    }
+
+    private void TrackSessionMinMax(int bpm)
+    {
+        if (_sessionMinHR == 0 || bpm < _sessionMinHR)
+            _sessionMinHR = bpm;
+        if (bpm > _sessionMaxHR)
+            _sessionMaxHR = bpm;
     }
 
     private void PushHrIfChanged()
@@ -408,8 +435,8 @@ public partial class C20HeartRateModule : ObservableObject, IModule
                 _oscSender.SendOscParam("/avatar/parameters/tensHR", tens);
                 _oscSender.SendOscParam("/avatar/parameters/hundredsHR", hundreds);
 
-                _oscSender.SendOscParam("/avatar/parameters/HRMin", hr);
-                _oscSender.SendOscParam("/avatar/parameters/HRMax", hr);
+                _oscSender.SendOscParam("/avatar/parameters/HRMin", _sessionMinHR > 0 ? _sessionMinHR : hr);
+                _oscSender.SendOscParam("/avatar/parameters/HRMax", _sessionMaxHR > 0 ? _sessionMaxHR : hr);
             }
         }
     }
