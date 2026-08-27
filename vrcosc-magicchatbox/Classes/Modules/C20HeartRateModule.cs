@@ -29,6 +29,7 @@ public partial class C20HeartRateModule : ObservableObject, IModule
     private int _latestHR;
     private DateTime _lastHRUpdate = DateTime.MinValue;
     private DateTime _lastBleAttempt = DateTime.MinValue;
+    private DateTime _lastBleFailureLog = DateTime.MinValue;
     private System.Timers.Timer? _dataTimer;
     private readonly C20BleClient _bleClient = new();
     private bool _disposed;
@@ -210,7 +211,11 @@ public partial class C20HeartRateModule : ObservableObject, IModule
 
                 if (!ok)
                 {
-                    Logging.WriteInfo("C20: Could not connect to the watch over BLE. Make sure it is advertising (tap the screen), Bluetooth is on, and the watch MAC is correct.");
+                    if (DateTime.Now.Subtract(_lastBleFailureLog).TotalSeconds >= 30)
+                    {
+                        Logging.WriteInfo("C20: Could not connect to the watch over BLE. Make sure it is advertising (tap the screen), Bluetooth is on, and the watch MAC is correct.");
+                        _lastBleFailureLog = DateTime.Now;
+                    }
                     _isMonitoringStarted = false;
                     _lastBleAttempt = DateTime.Now;
                     return;
@@ -325,7 +330,7 @@ public partial class C20HeartRateModule : ObservableObject, IModule
                 return;
             }
 
-            if (!_isMonitoringStarted && DateTime.Now.Subtract(_lastBleAttempt).TotalSeconds >= 3)
+            if (!_isMonitoringStarted && DateTime.Now.Subtract(_lastBleAttempt).TotalSeconds >= 10)
                 _ = StartMonitoringAsync();
             return;
         }

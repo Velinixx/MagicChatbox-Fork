@@ -28,12 +28,19 @@ public sealed class C20BleClient : IDisposable
 
         var watchAddress = ParseAddress(address);
         if (watchAddress == 0)
+        {
+            Logging.WriteInfo($"C20 BLE: Watch MAC '{address}' is not a valid address (expected 6 colon-separated hex pairs).");
             return false;
+        }
 
         var device = await BluetoothLEDevice.FromBluetoothAddressAsync(watchAddress);
         if (device == null)
+        {
+            Logging.WriteInfo($"C20 BLE: No watch found at {address}. Wake the watch (tap the screen) or pair it in Windows Settings → Bluetooth & devices, then retry.");
             return false;
+        }
 
+        Logging.WriteInfo($"C20 BLE: Watch found ({device.Name}). Connecting...");
         _device = device;
 
         var session = await GattSession.FromDeviceIdAsync(device.BluetoothDeviceId);
@@ -46,7 +53,10 @@ public sealed class C20BleClient : IDisposable
 
         var services = await device.GetGattServicesAsync();
         if (services.Status != GattCommunicationStatus.Success)
+        {
+            Logging.WriteInfo($"C20 BLE: Could not read the watch services (status {services.Status}). Bluetooth access may be blocked — check Windows Settings → Privacy → Bluetooth.");
             return false;
+        }
 
         foreach (var service in services.Services)
         {
@@ -65,7 +75,12 @@ public sealed class C20BleClient : IDisposable
                     c.ValueChanged += OnHrValueChanged;
                     var status = await c.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue.Notify);
                     if (status != GattCommunicationStatus.Success)
+                    {
+                        Logging.WriteInfo($"C20 BLE: Could not subscribe to heart rate notifications (status {status}).");
                         return false;
+                    }
+
+                    Logging.WriteInfo("C20 BLE: Subscribed to heart rate notifications (0x2A37).");
                 }
             }
             else if (service.Uuid == GattServiceUuids.Battery)
@@ -83,7 +98,10 @@ public sealed class C20BleClient : IDisposable
         }
 
         if (_hrCharacteristic == null)
+        {
+            Logging.WriteInfo("C20 BLE: The watch does not expose the heart rate service (0x180D / 0x2A37).");
             return false;
+        }
 
         IsConnected = true;
         ConnectionChanged?.Invoke(true);
