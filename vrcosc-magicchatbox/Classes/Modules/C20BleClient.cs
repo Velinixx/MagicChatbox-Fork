@@ -206,17 +206,18 @@ public sealed class C20BleClient : IDisposable
         _exerciseCts = new CancellationTokenSource();
         var ct = _exerciseCts.Token;
 
-        for (var i = 0; i < 9; i++)
+        int attempts = 0;
+        while (!_hasHrReading && !ct.IsCancellationRequested)
         {
-            if (_hasHrReading || ct.IsCancellationRequested) return;
-
             await WritePacketAsync(0x68, new byte[] { 0x00 });
             await WritePacketAsync(0x1F, new byte[] { 0x06 });
 
-            if (i == 0)
+            if (attempts == 0)
                 Logging.WriteInfo("C20 BLE: Sent exercise-mode start (0x68 0x00, 0x1F 0x06) to the watch.");
-            else
-                Logging.WriteInfo($"C20 BLE: Exercise-mode retry {i + 1} — still waiting for the first HR notification.");
+            else if (attempts % 3 == 0)
+                Logging.WriteInfo("C20 BLE: Still waiting for HR — keeping the watch awake so it doesn't sleep-disconnect.");
+
+            attempts++;
 
             try
             {
@@ -227,9 +228,6 @@ public sealed class C20BleClient : IDisposable
                 return;
             }
         }
-
-        if (!_hasHrReading)
-            Logging.WriteInfo("C20 BLE: No HR yet after exercise-mode retries. If the watch stays silent, start exercise mode on the watch itself.");
     }
 
     private async Task WritePacketAsync(byte cmd, byte[] payload)

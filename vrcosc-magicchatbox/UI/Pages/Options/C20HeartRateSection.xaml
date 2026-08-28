@@ -151,6 +151,12 @@
                             Margin="0,5,0,0"
                             FontSize="10"
                             Foreground="{StaticResource TextMutedBrush}"
+                            Text="If the watch screen sleeps it may drop the connection; MCB auto-reconnects on its own once the watch wakes and streams again."
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Margin="0,5,0,0"
+                            FontSize="10"
+                            Foreground="{StaticResource TextMutedBrush}"
                             Text="This mode only works on Windows. For unlocking/monitoring tricks use the hr_bridge instead."
                             TextWrapping="Wrap" />
                     </StackPanel>
@@ -210,6 +216,27 @@
                                 FontSize="14"
                                 Text="{Binding ModuleSettings.HeartRateIcon, Mode=TwoWay}" />
                         </StackPanel>
+                        <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                Foreground="{StaticResource TextLabelBrush}"
+                                Text="Text format:"
+                                TextWrapping="Wrap" />
+                            <TextBox
+                                Width="260"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                FontFamily="Consolas"
+                                FontSize="11"
+                                Text="{Binding ModuleSettings.HeartRateFormat, Mode=TwoWay}" />
+                        </StackPanel>
+                        <TextBlock
+                            Margin="0,5,0,0"
+                            FontSize="10"
+                            Foreground="{StaticResource TextMutedBrush}"
+                            Text="Placeholders: {icon} {hr} {hrval} {min} {max} {minval} {maxval}. {min}/{max} include the superscript label, {*val} are the numbers only. Default: {icon} {hr} | {max} | {min}"
+                            TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
 

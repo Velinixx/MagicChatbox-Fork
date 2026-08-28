@@ -107,23 +107,47 @@ public partial class C20HeartRateModule : ObservableObject, IModule
                 return string.Empty;
 
             int hr = HeartRate;
-            string icon = Settings.HeartRateIcon;
-            string bpm = Settings.ShowBpmSuffix ? " bpm" : "";
-            string result = $"{icon} {hr}{bpm}";
 
             if (Settings.SmoothHeartRate && _heartRateHistory.Count > 0)
             {
                 int avg = (int)_heartRateHistory.Average();
                 if (avg > 0 && avg != hr)
-                    result = $"{icon} {avg}{bpm}";
+                    hr = avg;
             }
 
-            if (_sessionMinHR > 0 && _sessionMaxHR >= _sessionMinHR)
-                result += $" | {_sessionMaxHR} {TextUtilities.TransformToSuperscript("max")} | {_sessionMinHR} {TextUtilities.TransformToSuperscript("min")}";
+            if (_sessionMinHR <= 0 || _sessionMaxHR < _sessionMinHR)
+                return BuildFormatString(hr, null, null);
 
-            return result;
+            return BuildFormatString(hr, _sessionMinHR, _sessionMaxHR);
         }
     }
+
+    private string BuildFormatString(int hr, int? min, int? max)
+    {
+        string icon = Settings.HeartRateIcon;
+        string bpm = Settings.ShowBpmSuffix ? " bpm" : "";
+        string current = $"{hr}{bpm}";
+
+        string format = Settings.HeartRateFormat;
+        if (string.IsNullOrWhiteSpace(format))
+            format = "{icon} {hr}";
+
+        string minSeg = min.HasValue ? $"{min.Value} {TextUtilities.TransformToSuperscript("min")}" : "";
+        string maxSeg = max.HasValue ? $"{max.Value} {TextUtilities.TransformToSuperscript("max")}" : "";
+
+        format = ReplaceToken(format, "icon", icon);
+        format = ReplaceToken(format, "hr", current);
+        format = ReplaceToken(format, "hrval", hr.ToString());
+        format = ReplaceToken(format, "minval", min?.ToString() ?? "");
+        format = ReplaceToken(format, "maxval", max?.ToString() ?? "");
+        format = ReplaceToken(format, "min", minSeg);
+        format = ReplaceToken(format, "max", maxSeg);
+
+        return format.Trim();
+    }
+
+    private static string ReplaceToken(string input, string name, string value)
+        => input.Replace("{" + name + "}", value, StringComparison.OrdinalIgnoreCase);
 
     public bool ShouldStartMonitoring()
     {
