@@ -23,13 +23,16 @@ public sealed class C20BleClient : IDisposable
     private GattCharacteristic? _hrCharacteristic;
     private GattCharacteristic? _batteryCharacteristic;
     private GattCharacteristic? _fee2Characteristic;
+    private GattCharacteristic? _fee3Characteristic;
     private System.Timers.Timer? _batteryTimer;
-    private CancellationTokenSource? _exerciseCts;
+    private CancellationTokenSource? _keepaliveCts;
     private bool _hasHrReading;
+    private DateTime _lastHrReceivedAt = DateTime.MinValue;
     private bool _disposed;
 
     private static readonly Guid FeeAServiceGuid = new Guid("0000feea-0000-1000-8000-00805f9b34fb");
     private static readonly Guid Fee2CharGuid = new Guid("0000fee2-0000-1000-8000-00805f9b34fb");
+    private static readonly Guid Fee3CharGuid = new Guid("0000fee3-0000-1000-8000-00805f9b34fb");
 
     public async Task<bool> StartAsync(string address)
     {
@@ -120,6 +123,8 @@ public sealed class C20BleClient : IDisposable
                 {
                     if (c.Uuid == Fee2CharGuid)
                         _fee2Characteristic = c;
+                    else if (c.Uuid == Fee3CharGuid)
+                        _fee3Characteristic = c;
                 }
             }
         }
@@ -131,7 +136,7 @@ public sealed class C20BleClient : IDisposable
         }
 
         _hasHrReading = false;
-        _ = StartExerciseModeLoopAsync();
+        _ = InitializeAndRunKeepaliveAsync();
         IsConnected = true;
         ConnectionChanged?.Invoke(true);
 
@@ -156,11 +161,18 @@ public sealed class C20BleClient : IDisposable
             _batteryTimer = null;
         }
 
-        if (_exerciseCts != null)
+        if (_keepaliveCts != null)
         {
-            _exerciseCts.Cancel();
-            _exerciseCts.Dispose();
-            _exerciseCts = null;
+            _keepaliveCts.Cancel();
+            _keepaliveCts.Dispose();
+            _keepaliveCts = null;
+        }
+
+        if (_fee3Characteristic != null)
+        {
+            try { _fee3Characteristic.ValueChanged -= OnFee3ValueChanged; }
+            catch { }
+            _fee3Characteristic = null;
         }
 
         if (_hrCharacteristic != null)
@@ -194,39 +206,71 @@ public sealed class C20BleClient : IDisposable
         }
     }
 
-    private async Task StartExerciseModeLoopAsync()
+    private async Task InitializeAndRunKeepaliveAsync()
     {
-        if (_fee2Characteristic == null)
+        try
         {
-            Logging.WriteInfo("C20 BLE: Watch has no 0xFEE2 write characteristic — exercise mode must be started manually on the watch.");
-            return;
-        }
+            if (_fee3Characteristic != null)
+            {
+                _fee3Characteristic.ValueChanged += OnFee3ValueChanged;
+                await _fee3Characteristic.WriteClientCharacteristicConfigurationDescriptorAsync(
+                    GattClientCharacteristicConfigurationDescriptorValue.Notify);
+            }
+            else
+            {
+                Logging.WriteInfo("C20 BLE: Watch has no 0xFEE3 — relying on 0x2A37 notifications only.");
+            }
 
-        _exerciseCts?.Cancel();
-        _exerciseCts = new CancellationTokenSource();
-        var ct = _exerciseCts.Token;
+            _keepaliveCts?.Cancel();
+            _keepaliveCts = new CancellationTokenSource();
+            var ct = _keepaliveCts.Token;
 
-        int attempts = 0;
-        while (!_hasHrReading && !ct.IsCancellationRequested)
-        {
+            // MOYOUNG init sequence, mirrors hr_bridge.py
             await WritePacketAsync(0x68, new byte[] { 0x00 });
-            await WritePacketAsync(0x1F, new byte[] { 0x06 });
+            await Task.Delay(200, ct);
+            await WritePacketAsync(0x1F, new byte[] { 0x01 });
+            await Task.Delay(200, ct);
+            await WritePacketAsync(0x6D, new byte[] { 0x00 });
+            await Task.Delay(200, ct);
+            await WritePacketAsync(0x18, new byte[] { 0x01 });
+            Logging.WriteInfo("C20 BLE: Sent exercise/trigger init (0x68 0x00, 0x1F 0x01, 0x6D 0x00, 0x18 0x01).");
 
-            if (attempts == 0)
-                Logging.WriteInfo("C20 BLE: Sent exercise-mode start (0x68 0x00, 0x1F 0x06) to the watch.");
-            else if (attempts % 3 == 0)
-                Logging.WriteInfo("C20 BLE: Still waiting for HR — keeping the watch awake so it doesn't sleep-disconnect.");
+            // Keepalive loop: keep poking the watch every 3s so it stays awake
+            // and answers with HR on 0xFEE3 even when it stops pushing 0x2A37.
+            _lastHrReceivedAt = DateTime.Now;
+            var lastKeepalive = DateTime.Now;
+            int polls = 0;
 
-            attempts++;
-
-            try
+            while (!ct.IsCancellationRequested)
             {
-                await Task.Delay(10000, ct);
+                try
+                {
+                    await Task.Delay(3000, ct);
+                }
+                catch (TaskCanceledException)
+                {
+                    return;
+                }
+
+                var now = DateTime.Now;
+
+                if (now.Subtract(_lastHrReceivedAt).TotalSeconds >= 2)
+                    await WritePacketAsync(0x6D, new byte[] { 0x00 });
+
+                if (now.Subtract(lastKeepalive).TotalSeconds >= 30)
+                {
+                    await WritePacketAsync(0x68, new byte[] { 0x00 });
+                    lastKeepalive = now;
+                }
+
+                polls++;
+                if (polls % 3 == 0)
+                    await WritePacketAsync(0x2F, Array.Empty<byte>());
             }
-            catch (TaskCanceledException)
-            {
-                return;
-            }
+        }
+        catch (Exception ex)
+        {
+            Logging.WriteInfo($"C20 BLE: Keepalive stopped: {ex.Message}");
         }
     }
 
@@ -237,7 +281,7 @@ public sealed class C20BleClient : IDisposable
         try
         {
             var writer = new DataWriter();
-            writer.WriteBytes(new byte[] { 0xFE, 0xEA, 0x10, (byte)(payload.Length + 2), cmd });
+            writer.WriteBytes(new byte[] { 0xFE, 0xEA, 0x10, (byte)(payload.Length + 5), cmd });
             if (payload.Length > 0)
                 writer.WriteBytes(payload);
             await _fee2Characteristic.WriteValueAsync(writer.DetachBuffer(), GattWriteOption.WriteWithoutResponse);
@@ -277,6 +321,28 @@ public sealed class C20BleClient : IDisposable
 
         HeartRateReceived?.Invoke(hr);
         _hasHrReading = true;
+        _lastHrReceivedAt = DateTime.Now;
+    }
+
+    private void OnFee3ValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
+    {
+        var bytes = ReadBytes(args.CharacteristicValue);
+        if (bytes.Length < 6)
+            return;
+
+        if (bytes[0] != 0xFE || bytes[1] != 0xEA)
+            return;
+
+        if (bytes[4] != (byte)0x6D)
+            return;
+
+        int bpm = bytes[5];
+        if (bpm >= 20 && bpm <= 250)
+        {
+            HeartRateReceived?.Invoke(bpm);
+            _hasHrReading = true;
+            _lastHrReceivedAt = DateTime.Now;
+        }
     }
 
     private static async Task<BluetoothLEDevice?> ScanForWatchAsync(ulong watchAddress)
