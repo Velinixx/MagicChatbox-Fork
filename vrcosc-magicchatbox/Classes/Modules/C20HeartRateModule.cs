@@ -30,11 +30,14 @@ public partial class C20HeartRateModule : ObservableObject, IModule
     private int _latestHR;
     private DateTime _lastHRUpdate = DateTime.MinValue;
     private DateTime _lastBleAttempt = DateTime.MinValue;
-    private DateTime _lastBleFailureLog = DateTime.MinValue;
+    private DateTime _lastFailureLog = DateTime.MinValue;
     private int _sessionMinHR;
     private int _sessionMaxHR;
     private System.Timers.Timer? _dataTimer;
     private readonly C20BleClient _bleClient = new();
+    private readonly HypeRateClient _hypeRateClient = new();
+    private bool _sessionIsHypeRate;
+    private DateTime _lastHypeAttempt = DateTime.MinValue;
     private bool _disposed;
 
     private readonly IAppState _appState;
@@ -87,9 +90,12 @@ public partial class C20HeartRateModule : ObservableObject, IModule
         _dispatcher = dispatcher;
         _settingsProvider = settingsProvider;
 
-        _bleClient.HeartRateReceived += OnBleHeartRate;
+        _bleClient.HeartRateReceived += OnHeartRateSample;
         _bleClient.ConnectionChanged += OnBleConnectionChanged;
         _bleClient.BatteryRead += b => _dispatcher.Invoke(() => BatteryLevel = b);
+
+        _hypeRateClient.HeartRateReceived += OnHeartRateSample;
+        _hypeRateClient.ConnectionChanged += OnHypeRateConnectionChanged;
 
         _dataTimer = new System.Timers.Timer
         {
@@ -221,11 +227,35 @@ public partial class C20HeartRateModule : ObservableObject, IModule
     {
         if (_isMonitoringStarted) return;
         _isMonitoringStarted = true;
+        _sessionIsHypeRate = Settings.UseHypeRate;
 
         try
         {
             _cts = new CancellationTokenSource();
             await _dispatcher.InvokeAsync(() => DeviceConnected = false);
+
+            if (Settings.UseHypeRate)
+            {
+                if (string.IsNullOrWhiteSpace(Settings.HypeRateApiKey) ||
+                    string.IsNullOrWhiteSpace(Settings.HypeRateUserId))
+                {
+                    if (DateTime.Now.Subtract(_lastFailureLog).TotalSeconds >= 30)
+                    {
+                        Logging.WriteInfo("C20: HypeRate mode needs an API key and a user ID (free key at hyperate.io).");
+                        _lastFailureLog = DateTime.Now;
+                    }
+                    _isMonitoringStarted = false;
+                    _lastHypeAttempt = DateTime.Now;
+                    return;
+                }
+
+                // The client keeps retrying on its own from here — no TCP, no BLE.
+                _hypeRateClient.Start(Settings.HypeRateApiKey, Settings.HypeRateUserId);
+                ResetHrSession();
+                _dataTimer?.Start();
+                Logging.WriteInfo($"C20: Listening to HypeRate channel hr:{Settings.HypeRateUserId}");
+                return;
+            }
 
             if (Settings.EmbeddedBle)
             {
@@ -241,10 +271,10 @@ public partial class C20HeartRateModule : ObservableObject, IModule
 
                 if (!ok)
                 {
-                    if (DateTime.Now.Subtract(_lastBleFailureLog).TotalSeconds >= 30)
+                    if (DateTime.Now.Subtract(_lastFailureLog).TotalSeconds >= 30)
                     {
                         Logging.WriteInfo("C20: Could not connect to the watch over BLE. Make sure it is advertising (tap the screen), Bluetooth is on, and the watch MAC is correct.");
-                        _lastBleFailureLog = DateTime.Now;
+                        _lastFailureLog = DateTime.Now;
                     }
                     _isMonitoringStarted = false;
                     _lastBleAttempt = DateTime.Now;
@@ -355,6 +385,30 @@ public partial class C20HeartRateModule : ObservableObject, IModule
             return;
         }
 
+        // The mode was flipped in settings while a session was running — restart
+        // under the new mode so BLE/bridge/HypeRate never feed us at once.
+        if (_isMonitoringStarted && Settings.UseHypeRate != _sessionIsHypeRate)
+        {
+            StopMonitoring();
+            _ = StartMonitoringAsync();
+            return;
+        }
+
+        if (Settings.UseHypeRate)
+        {
+            if (_hypeRateClient.IsConnected)
+            {
+                PushHrIfChanged();
+                return;
+            }
+
+            // Not connected yet: the client is retrying on its own, but if the
+            // session never started (e.g. settings were fixed mid-run) retry here.
+            if (!_isMonitoringStarted && DateTime.Now.Subtract(_lastHypeAttempt).TotalSeconds >= 10)
+                _ = StartMonitoringAsync();
+            return;
+        }
+
         if (Settings.EmbeddedBle)
         {
             if (_bleClient.IsConnected)
@@ -379,7 +433,7 @@ public partial class C20HeartRateModule : ObservableObject, IModule
         PushHrIfChanged();
     }
 
-    private void OnBleHeartRate(int bpm)
+    private void OnHeartRateSample(int bpm)
     {
         if (bpm <= 0) return;
 
@@ -404,6 +458,13 @@ public partial class C20HeartRateModule : ObservableObject, IModule
             _isMonitoringStarted = false;
             _lastBleAttempt = DateTime.Now;
         }
+    }
+
+    private void OnHypeRateConnectionChanged(bool connected)
+    {
+        // The HypeRate client reconnects on its own, so the session stays alive
+        // through drops — unlike BLE, don't tear the session down here.
+        _dispatcher.Invoke(() => DeviceConnected = connected);
     }
 
     private void ResetHrSession()
@@ -469,6 +530,7 @@ public partial class C20HeartRateModule : ObservableObject, IModule
     {
         _dataTimer?.Stop();
         _bleClient.Stop();
+        _hypeRateClient.Stop();
 
         if (_tcpReader != null)
         {
@@ -512,5 +574,6 @@ public partial class C20HeartRateModule : ObservableObject, IModule
         StopMonitoring();
         _dataTimer?.Dispose();
         _bleClient.Dispose();
+        _hypeRateClient.Dispose();
     }
 }

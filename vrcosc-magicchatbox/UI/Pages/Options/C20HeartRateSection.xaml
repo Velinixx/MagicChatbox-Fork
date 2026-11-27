@@ -162,6 +162,58 @@
                     </StackPanel>
                 </Border>
 
+                <!-- HypeRate connection -->
+                <Border Style="{StaticResource OptionCardStyle}" Width="500">
+                    <StackPanel Margin="5">
+                        <TextBlock
+                            FontSize="15"
+                            Foreground="{StaticResource TextSectionHeaderBrush}"
+                            Text="HypeRate connection"
+                            TextWrapping="Wrap" />
+                        <CheckBox
+                            Margin="0,5,0,0"
+                            Content="Use HypeRate (watch app → cloud, no bridge)"
+                            IsChecked="{Binding ModuleSettings.UseHypeRate, Mode=TwoWay}"
+                            Style="{DynamicResource SettingsCheckbox}" />
+                        <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                Foreground="{StaticResource TextLabelBrush}"
+                                Text="User ID:"
+                                TextWrapping="Wrap" />
+                            <TextBox
+                                Width="220"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                FontFamily="Consolas"
+                                FontSize="11"
+                                Text="{Binding ModuleSettings.HypeRateUserId, Mode=TwoWay}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                Foreground="{StaticResource TextLabelBrush}"
+                                Text="API key:"
+                                TextWrapping="Wrap" />
+                            <TextBox
+                                Width="220"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                FontFamily="Consolas"
+                                FontSize="11"
+                                Text="{Binding ModuleSettings.HypeRateApiKey, Mode=TwoWay}" />
+                        </StackPanel>
+                        <TextBlock
+                            Margin="0,5,0,0"
+                            FontSize="10"
+                            Foreground="{StaticResource TextMutedBrush}"
+                            Text="The HypeRate app on your watch publishes your heart rate to HypeRate's cloud; Magic Chatbox subscribes to it directly over WebSocket — no BLE, no hr_bridge. While enabled this mode takes priority over the other two. Get a free API key at hyperate.io; your User ID is the id shown on your HypeRate dashboard."
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
                 <!-- Heart Rate Display -->
                 <Border Style="{StaticResource OptionCardStyle}" Width="500">
                     <StackPanel Margin="5">
